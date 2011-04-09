@@ -1,4 +1,5 @@
-#summary Setting up device discovery
+#summary Introduction to setting up device discovery
+#labels Featured
 
 = Introduction to device discovery =
 
