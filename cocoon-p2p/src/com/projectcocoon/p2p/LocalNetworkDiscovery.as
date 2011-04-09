@@ -168,7 +168,7 @@ package com.projectcocoon.p2p
 		
 		private function getClientName():String
 		{
-			if(!_clientName) _clientName = _group.convertPeerIDToGroupAddress(_nc.nearID);
+			if(!_clientName) _clientName = "";
 			return _clientName;
 		}
 		
