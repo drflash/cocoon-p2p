@@ -199,6 +199,10 @@ package com.projectcocoon.p2p
 		public function set clientName(val:String):void
 		{
 			_clientName = val;
+			if(_localClient) {
+				_localClient.clientName = val;
+				announceName();
+			}
 		}		
 		
 		public function get groupName():String
