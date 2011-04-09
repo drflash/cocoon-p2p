@@ -25,16 +25,20 @@
 package com.projectcocoon.p2p
 {
 	
+	import com.projectcocoon.p2p.events.AccelerationEvent;
 	import com.projectcocoon.p2p.events.ClientEvent;
 	import com.projectcocoon.p2p.events.MessageEvent;
+	import com.projectcocoon.p2p.vo.AccelerationVO;
 	import com.projectcocoon.p2p.vo.ClientVO;
 	import com.projectcocoon.p2p.vo.MessageVO;
 	
+	import flash.events.AccelerometerEvent;
 	import flash.events.EventDispatcher;
 	import flash.events.NetStatusEvent;
 	import flash.net.GroupSpecifier;
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
+	import flash.sensors.Accelerometer;
 	
 	import mx.collections.ArrayCollection;
 
@@ -42,6 +46,7 @@ package com.projectcocoon.p2p
 	[Event(name="clientUpdate", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientRemoved", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="dataReceived", type="com.projectcocoon.p2p.events.MessageEvent")]
+	[Event(name="accelerometerUpdate", type="com.projectcocoon.p2p.events.AccelerationEvent")]
 	public class LocalNetworkDiscovery extends EventDispatcher
 	{
 	
@@ -56,7 +61,8 @@ package com.projectcocoon.p2p
 		private var _groupName:String = "default";
 		private var _multicastAddress:String = "225.225.0.1:30303";
 		private var _receiveLocal:Boolean = false;
-		private var _activeTransfer:Boolean = false;
+		private var _acc:Accelerometer;
+		private var _accelerometerInterval:uint = 0;
 		
 		public function LocalNetworkDiscovery()
 		{
@@ -139,6 +145,10 @@ package com.projectcocoon.p2p
 						}
 					}
 				}
+				if(msg.command == CommandList.ACCELEROMETER) {
+					var acc:AccelerationVO = new AccelerationVO(new ClientVO(evt.info.message.data.client.clientName, evt.info.message.data.client.peerID, evt.info.message.data.client.groupID), evt.info.message.data.accelerationX, evt.info.message.data.accelerationY, evt.info.message.data.accelerationZ, evt.info.message.data.timestamp);
+					dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
+				}
 			} else {
 				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, new MessageVO(new ClientVO(evt.info.message.client.clientName, evt.info.message.client.peerID, evt.info.message.client.groupID), evt.info.message.data, evt.info.message.destination, evt.info.message.type, evt.info.message.scope)));
 			}
@@ -192,6 +202,14 @@ package com.projectcocoon.p2p
 			_group.post(msg);
 		}
 		
+		private function onAccelerometer(evt:AccelerometerEvent):void
+		{
+			var acc:AccelerationVO = new AccelerationVO(_localClient, evt.accelerationX, evt.accelerationY, evt.accelerationZ, evt.timestamp);
+			var msg:MessageVO = new MessageVO(_localClient, acc, null, CommandType.SERVICE, CommandScope.ALL, CommandList.ACCELEROMETER);
+			if(loopback) dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
+			_group.post(msg);
+		}
+		
 		public function get clientName():String
 		{
 			return _clientName;
@@ -230,7 +248,23 @@ package com.projectcocoon.p2p
 		public function set loopback(bool:Boolean):void
 		{
 			_receiveLocal = bool;
-		}		
+		}
+		
+		public function get accelerometerInterval():uint
+		{
+			return _accelerometerInterval;	
+		}
+		public function set accelerometerInterval(val:uint):void
+		{
+			_accelerometerInterval = val;
+			if(_accelerometerInterval > 0) {
+				_acc = new Accelerometer();
+				_acc.setRequestedUpdateInterval(accelerometerInterval);
+				_acc.addEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
+			} else {
+				_acc.removeEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
+			}
+		}
 		
 	}
 	
