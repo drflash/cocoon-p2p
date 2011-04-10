@@ -27,4 +27,4 @@ Device discovery lets you get a list of all connected clients on a given NetGrou
 
 == Video tutorial ==
 
-<wiki:video url="http://www.youtube.com/watch?v=bXnHav_z2L0" />
+<wiki:video url="http://www.youtube.com/watch?v=bXnHav_z2L0" width="427" height="267" />
