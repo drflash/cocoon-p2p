@@ -1,4 +1,5 @@
 #summary Video examples of various Cocoon P2P features
+#labels Featured
 
 == Device discovery == 
 
