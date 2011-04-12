@@ -5,6 +5,11 @@
 
 <wiki:video url="http://www.youtube.com/watch?v=bXnHav_z2L0" width="600" height="400" />
 
+*Download* [http://cocoon-p2p.googlecode.com/files/CocoonDiscovery.fxp CocoonDiscovery.fxp] 
+
+
 == Messaging == 
 
 <wiki:video url="http://www.youtube.com/watch?v=xGmy8uSPTFc" width="600" height="400" />
+
+*Download* [http://cocoon-p2p.googlecode.com/files/CocoonMessaging.fxp CocoonMessaging.fxp]
