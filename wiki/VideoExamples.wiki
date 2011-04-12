@@ -7,4 +7,4 @@
 
 == Messaging == 
 
-_coming soon_
+<wiki:video url="http://www.youtube.com/watch?v=xGmy8uSPTFc" width="600" height="400" />
