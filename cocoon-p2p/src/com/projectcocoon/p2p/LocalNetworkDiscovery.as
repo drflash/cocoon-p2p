@@ -187,7 +187,7 @@ package com.projectcocoon.p2p
 			_group.post(new MessageVO(_localClient, null, null, CommandType.SERVICE, CommandScope.ALL, CommandList.ANNOUNCE_NAME));
 		}
 		
-		public function sendMessageToClient(value:String, groupID:String):void
+		public function sendMessageToClient(value:Object, groupID:String):void
 		{
 			var msg:MessageVO = new MessageVO(_localClient, value, groupID, CommandType.MESSAGE, CommandScope.DIRECT);
 			
@@ -195,7 +195,7 @@ package com.projectcocoon.p2p
 			_group.sendToNearest(msg, groupID);
 		}
 		
-		public function sendMessageToAll(value:String):void
+		public function sendMessageToAll(value:Object):void
 		{
 			var msg:MessageVO = new MessageVO(_localClient, value, null, CommandType.MESSAGE, CommandScope.ALL);
 			if(loopback) dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, msg));
