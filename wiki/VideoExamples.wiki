@@ -13,3 +13,11 @@
 <wiki:video url="http://www.youtube.com/watch?v=xGmy8uSPTFc" width="600" height="400" />
 
 *Download* [http://cocoon-p2p.googlecode.com/files/CocoonMessaging.fxp CocoonMessaging.fxp]
+
+
+== Accelerometer == 
+
+<wiki:video url="http://www.youtube.com/watch?v=8loUrnFUeMc" width="600" height="400" />
+
+*Download* [http://cocoon-p2p.googlecode.com/files/CocoonAccelerometer.fxp CocoonAccelerometer.fxp]
+[http://cocoon-p2p.googlecode.com/files/CocoonAccelerometerDesktop.fxp CocoonAccelerometerDesktop.fxp]
