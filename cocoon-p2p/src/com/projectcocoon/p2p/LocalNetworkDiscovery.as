@@ -25,189 +25,157 @@
 package com.projectcocoon.p2p
 {
 	
+	import com.projectcocoon.p2p.command.CommandList;
+	import com.projectcocoon.p2p.command.CommandScope;
+	import com.projectcocoon.p2p.command.CommandType;
 	import com.projectcocoon.p2p.events.AccelerationEvent;
 	import com.projectcocoon.p2p.events.ClientEvent;
+	import com.projectcocoon.p2p.events.GroupEvent;
 	import com.projectcocoon.p2p.events.MessageEvent;
+	import com.projectcocoon.p2p.managers.GroupManager;
+	import com.projectcocoon.p2p.managers.ObjectManager;
+	import com.projectcocoon.p2p.util.ClassRegistry;
 	import com.projectcocoon.p2p.vo.AccelerationVO;
 	import com.projectcocoon.p2p.vo.ClientVO;
 	import com.projectcocoon.p2p.vo.MessageVO;
 	
 	import flash.events.AccelerometerEvent;
+	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.NetStatusEvent;
 	import flash.net.GroupSpecifier;
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
+	import flash.net.registerClassAlias;
 	import flash.sensors.Accelerometer;
 	
 	import mx.collections.ArrayCollection;
+	import mx.core.IMXMLObject;
 
+	[Event(name="groupConnected", type="com.projectcocoon.p2p.events.GroupEvent")]
+	[Event(name="groupClosed", type="com.projectcocoon.p2p.events.GroupEvent")]
+	[Event(name="clientAdded", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientAdded", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientUpdate", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientRemoved", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="dataReceived", type="com.projectcocoon.p2p.events.MessageEvent")]
 	[Event(name="accelerometerUpdate", type="com.projectcocoon.p2p.events.AccelerationEvent")]
-	public class LocalNetworkDiscovery extends EventDispatcher
+	public class LocalNetworkDiscovery extends EventDispatcher implements IMXMLObject
 	{
+		/**
+		 * URL for LAN connectivity
+		 */
+		private static const RTMFP_LOCAL:String = "rtmfp:";
+		
+		/**
+		 * URL for peer discovery through Adobe's Cirrus service
+		 * @see http://labs.adobe.com/technologies/cirrus/
+		 */ 
+		private static const RTMFP_CIRRUS:String = "rtmfp://p2p.rtmfp.net";
 	
-		[Bindable] public var clientsConnected:uint = 0;
-		[Bindable] public var clients:ArrayCollection = new ArrayCollection();
-
+		private var _autoConnect:Boolean = true;
 		private var _nc:NetConnection;
 		private var _groupSpec:GroupSpecifier;
+		private var _groupManager:GroupManager;
+		private var _objectManager:ObjectManager;
 		private var _group:NetGroup;
 		private var _clientName:String;
 		private var _localClient:ClientVO;
+		private var _clients:ArrayCollection = new ArrayCollection();
 		private var _groupName:String = "default";
 		private var _multicastAddress:String = "225.225.0.1:30303";
 		private var _receiveLocal:Boolean = false;
 		private var _acc:Accelerometer;
 		private var _accelerometerInterval:uint = 0;
 		
+		// ========================== //
+			
 		public function LocalNetworkDiscovery()
 		{
-			connect();
+			registerClasses();
 		}
 		
+		public function initialized(document:Object, id:String):void
+		{
+			if (autoConnect)
+				connect();
+		}
+		
+		/**
+		 * Connects to the p2p network 
+		 */		
 		public function connect():void
 		{
 			_nc = new NetConnection();
 			_nc.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus);
-			_nc.connect("rtmfp:");
+			_nc.connect(RTMFP_LOCAL);
 		}
 		
-		private function onNetStatus(evt:NetStatusEvent):void
+		public function close():void
 		{
-			switch (evt.info.code) {
-				case NetStatusCode.NETCONNECTION_CONNECT_SUCCESS:
-					setupGroup();
-				break;
-				case NetStatusCode.NETGROUP_CONNECT_SUCCESS:
-					setupClient();
-				break;
-				case NetStatusCode.NETGROUP_NEIGHBOUR_CONNECT:
-					onClientConnect(evt);
-				break;
-				case NetStatusCode.NETGROUP_NEIGHBOUR_DISCONNECT:
-					onClientDisconnect(evt);			
-				break;
-				case NetStatusCode.NETGROUP_POSTING_NOTIFY:
-					onNetGroupPosting(evt);
-				break;
-				case NetStatusCode.NETGROUP_SENDTO_NOTIFY:
-					onNetGroupSendTo(evt);
-				break;
-			}
+			// todo
 		}
 		
-		private function setupGroup():void
-		{
-			_groupSpec = new GroupSpecifier(groupName);
-			_groupSpec.postingEnabled = true;
-			_groupSpec.routingEnabled = true;
-			_groupSpec.ipMulticastMemberUpdatesEnabled = true;
-			_groupSpec.objectReplicationEnabled = true;
-			_groupSpec.addIPMulticastAddress(multicastAddress);
-			
-			_group = new NetGroup(_nc, _groupSpec.groupspecWithAuthorizations());
-			_group.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus);
-		}
-		
-		private function setupClient():void
-		{			
-			_localClient = new ClientVO(getClientName(), _nc.nearID, _group.convertPeerIDToGroupAddress(_nc.nearID));
-			
-			clientsConnected = _group.estimatedMemberCount;
-			clients.addItem(_localClient);
-		}
-		
-		private function onClientConnect(evt:NetStatusEvent):void
-		{
-			clientsConnected = _group.estimatedMemberCount;
-			
-			var client:ClientVO = new ClientVO("", evt.info.peerID, _group.convertPeerIDToGroupAddress(evt.info.peerID));
-			
-			clients.addItem(client);
-			announceName();
-		}
-		
-		private function onNetGroupPosting(evt:NetStatusEvent):void
-		{
-			var msg:MessageVO = new MessageVO(new ClientVO(evt.info.message.client.clientName, evt.info.message.client.peerID, evt.info.message.client.groupID), evt.info.message.data, evt.info.message.destination, evt.info.message.type, evt.info.message.scope, evt.info.message.command);
-			if(msg.type == CommandType.SERVICE) {
-				if(msg.command == CommandList.ANNOUNCE_NAME) {
-					for(var j:uint=0; j<clients.length; j++) {
-						var client:ClientVO = ClientVO(clients[j]);
-						if(client.groupID == msg.client.groupID) {
-							client.clientName = evt.info.message.client.clientName;
-							dispatchEvent(new ClientEvent(ClientEvent.CLIENT_UPDATE, client));
-							break;
-						}
-					}
-				}
-				if(msg.command == CommandList.ACCELEROMETER) {
-					var acc:AccelerationVO = new AccelerationVO(new ClientVO(evt.info.message.data.client.clientName, evt.info.message.data.client.peerID, evt.info.message.data.client.groupID), evt.info.message.data.accelerationX, evt.info.message.data.accelerationY, evt.info.message.data.accelerationZ, evt.info.message.data.timestamp);
-					dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
-				}
-			} else {
-				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, new MessageVO(new ClientVO(evt.info.message.client.clientName, evt.info.message.client.peerID, evt.info.message.client.groupID), evt.info.message.data, evt.info.message.destination, evt.info.message.type, evt.info.message.scope)));
-			}
-		}
-		
-		private function onNetGroupSendTo(evt:NetStatusEvent):void
-		{
-			if(evt.info.fromLocal == true) {
-				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, new MessageVO(new ClientVO(evt.info.message.client.clientName, evt.info.message.client.peerID, evt.info.message.client.groupID), evt.info.message.data, evt.info.message.destination, evt.info.message.type, evt.info.message.scope)));
-			} else {
-				_group.sendToNearest(evt.info.message, evt.info.message.destination);
-			}
-		}
-		
-		private function onClientDisconnect(evt:NetStatusEvent):void
-		{
-			clientsConnected = _group.estimatedMemberCount;
-			for(var i:uint=0; i<clients.length; i++) {
-				var client:ClientVO = ClientVO(clients[i]);
-				if(client.groupID == _group.convertPeerIDToGroupAddress(evt.info.peerID)) {
-					dispatchEvent(new ClientEvent(ClientEvent.CLIENT_REMOVED, client));
-					clients.removeItemAt(i);
-					return;
-				}
-			}
-		}
-		
-		private function getClientName():String
-		{
-			if(!_clientName) _clientName = "";
-			return _clientName;
-		}
-		
-		private function announceName():void
-		{
-			_group.post(new MessageVO(_localClient, null, null, CommandType.SERVICE, CommandScope.ALL, CommandList.ANNOUNCE_NAME));
-		}
-		
+		/**
+		 * Sends an arbitrary message (object, primitive, etc.) to a specific peer in the p2p network 
+		 * @param value the message to send. Can be any type.
+		 * @param groupID the group address of the peer (usually ClientVO.groupID)
+		 */		
 		public function sendMessageToClient(value:Object, groupID:String):void
 		{
-			var msg:MessageVO = new MessageVO(_localClient, value, groupID, CommandType.MESSAGE, CommandScope.DIRECT);
-			
-			if(loopback && (groupID != _localClient.groupID)) dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, msg));
-			_group.sendToNearest(msg, groupID);
+			var msg:MessageVO = _groupManager.sendMessageToGroupAddress(value, _group, groupID);
+			if(loopback) 
+				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, msg));
 		}
 		
+		/**
+		 * Sends an arbitrary message (object, primitive, etc.) to all peers in the p2p network 
+		 * @param value the message to send. Can be any type.
+		 */
 		public function sendMessageToAll(value:Object):void
 		{
-			var msg:MessageVO = new MessageVO(_localClient, value, null, CommandType.MESSAGE, CommandScope.ALL);
-			if(loopback) dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, msg));
-			_group.post(msg);
+			var msg:MessageVO = _groupManager.sendMessageToAll(value, _group);
+			if(loopback) 
+				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, msg));
 		}
 		
-		private function onAccelerometer(evt:AccelerometerEvent):void
+		public function shareWithClient(value:Object, groupID:String):void
 		{
-			var acc:AccelerationVO = new AccelerationVO(_localClient, evt.accelerationX, evt.accelerationY, evt.accelerationZ, evt.timestamp);
-			var msg:MessageVO = new MessageVO(_localClient, acc, null, CommandType.SERVICE, CommandScope.ALL, CommandList.ACCELEROMETER);
-			if(loopback) dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
-			_group.post(msg);
+			if (!_objectManager)
+				_objectManager = new ObjectManager(_groupManager);
+			_objectManager.share(value, _groupName, groupID);
+		}
+		
+		public function shareWithAll(value:Object):void
+		{
+			if (!_objectManager)
+				_objectManager = new ObjectManager(_groupManager);
+			_objectManager.share(value, _groupName);
+		}
+		
+		// ========================== //
+		
+		[Bindable(event="clientsConnectedChange")]
+		public function get clientsConnected():uint
+		{
+			if (_groupManager && _group)
+				return _groupManager.getClients(_group).length;
+			return 0;
+		}
+		
+		[Bindable(event="clientsChange")]
+		public function get clients():ArrayCollection
+		{
+			return _clients;
+		}
+		
+		public function get autoConnect():Boolean
+		{
+			return _autoConnect;
+		}
+		public function set autoConnect(value:Boolean):void
+		{
+			_autoConnect = value;
 		}
 		
 		public function get clientName():String
@@ -217,7 +185,8 @@ package com.projectcocoon.p2p
 		public function set clientName(val:String):void
 		{
 			_clientName = val;
-			if(_localClient) {
+			if(_localClient) 
+			{
 				_localClient.clientName = val;
 				announceName();
 			}
@@ -266,6 +235,136 @@ package com.projectcocoon.p2p
 			}
 		}
 		
+		
+		// ============= Private ============= //
+		
+		private function registerClasses():void
+		{
+			ClassRegistry.registerClasses();
+		}
+		
+		private function setupGroup():void
+		{
+			// Groupspec for the main group
+			_groupSpec = new GroupSpecifier(groupName);
+			_groupSpec.postingEnabled = true;
+			_groupSpec.routingEnabled = true;
+			_groupSpec.ipMulticastMemberUpdatesEnabled = true;
+			_groupSpec.objectReplicationEnabled = true;
+			_groupSpec.addIPMulticastAddress(multicastAddress);
+			
+			// create and setup the GroupManager
+			_groupManager = new GroupManager(_nc);
+			_groupManager.addEventListener(GroupEvent.GROUP_CONNECTED, onGroupConnected);
+			_groupManager.addEventListener(GroupEvent.GROUP_CLOSED, onGroupClosed);
+			_groupManager.addEventListener(ClientEvent.CLIENT_ADDED, onClientAdded);
+			_groupManager.addEventListener(ClientEvent.CLIENT_REMOVED, onClientRemoved);
+			_groupManager.addEventListener(ClientEvent.CLIENT_UPDATE, onClientUpdate);
+			_groupManager.addEventListener(MessageEvent.DATA_RECEIVED, onDataReceived);
+				
+			// create the group
+			_group = _groupManager.createNetGroup(_groupSpec.groupspecWithAuthorizations());
+			
+		}
+
+		private function setupClient():void
+		{		
+			// get the local ClientVO for reference
+			_localClient = _groupManager.getLocalClient(_group);
+			_localClient.clientName = getClientName();
+		}
+		
+		private function getClientName():String
+		{
+			if(!_clientName) 
+				_clientName = "";
+			return _clientName;
+		}
+		
+		private function announceName():void
+		{
+			// announce ourself to the other peers
+			_groupManager.announceToGroup(_group);
+		}
+		
+		// ============= Event Handlers ============= //
+		
+		private function onNetStatus(evt:NetStatusEvent):void
+		{
+			switch (evt.info.code) 
+			{
+				case NetStatusCode.NETCONNECTION_CONNECT_SUCCESS:
+					setupGroup();
+					break;
+			}
+		}
+		
+		private function onGroupConnected(event:GroupEvent):void
+		{
+			if (event.group == _group)
+			{
+				_localClient = _groupManager.getLocalClient(_group);
+				_localClient.clientName = getClientName();
+			}
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
+		private function onGroupClosed(event:GroupEvent):void
+		{
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
+		private function onClientAdded(event:ClientEvent):void
+		{
+			if (event.group == _group)
+			{
+				_clients.addItem(event.client);
+				dispatchEvent(new Event("clientsConnectedChange"));
+				announceName();
+			}
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
+		private function onClientRemoved(event:ClientEvent):void
+		{
+			if (event.group == _group)
+			{
+				_clients.removeItemAt(_clients.getItemIndex(event.client));
+				dispatchEvent(new Event("clientsConnectedChange"));
+			}
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
+		private function onClientUpdate(event:ClientEvent):void
+		{
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
+		private function onDataReceived(event:MessageEvent):void
+		{
+			if(event.group == _group && event.message.command == CommandList.ACCELEROMETER) 
+			{
+				var acc:AccelerationVO = event.message.data as AccelerationVO;
+				dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
+			}
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
+		private function onAccelerometer(evt:AccelerometerEvent):void
+		{
+			var acc:AccelerationVO = new AccelerationVO(_localClient, evt.accelerationX, evt.accelerationY, evt.accelerationZ, evt.timestamp);
+			var msg:MessageVO = new MessageVO(_localClient, acc, null, CommandType.SERVICE, CommandScope.ALL, CommandList.ACCELEROMETER);
+			if(loopback) 
+				dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
+			_group.post(msg);
+		}
+
 	}
 	
 }

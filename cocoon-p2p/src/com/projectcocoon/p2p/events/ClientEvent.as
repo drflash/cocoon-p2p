@@ -3,6 +3,7 @@ package com.projectcocoon.p2p.events
 	import com.projectcocoon.p2p.vo.ClientVO;
 	
 	import flash.events.Event;
+	import flash.net.NetGroup;
 	
 	public class ClientEvent extends Event
 	{
@@ -12,11 +13,13 @@ package com.projectcocoon.p2p.events
 		public static const CLIENT_REMOVED:String = "clientRemoved";
 		
 		[Bindable] public var client:ClientVO;
+		public var group:NetGroup;
 		
-		public function ClientEvent(type:String, data:ClientVO=null, bubbles:Boolean=false, cancelable:Boolean=false)
+		public function ClientEvent(type:String, client:ClientVO=null, group:NetGroup=null)
 		{
-			client = data;
-			super(type, bubbles, cancelable);
+			super(type);
+			this.client = client;
+			this.group = group;
 		}
 		
 	}

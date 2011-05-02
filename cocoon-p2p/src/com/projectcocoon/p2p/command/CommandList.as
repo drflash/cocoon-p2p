@@ -1,4 +1,4 @@
-package com.projectcocoon.p2p
+package com.projectcocoon.p2p.command
 {
 	public class CommandList
 	{

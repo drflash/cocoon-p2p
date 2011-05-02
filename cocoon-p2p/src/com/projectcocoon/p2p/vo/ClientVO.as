@@ -9,7 +9,10 @@ package com.projectcocoon.p2p.vo
 		public var peerID:String;
 		public var groupID:String;
 		
-		public function ClientVO(_clientName:String,_peerID:String,_groupID:String)
+		[Transient]
+		public var isLocal:Boolean;
+		
+		public function ClientVO(_clientName:String = null, _peerID:String = null, _groupID:String = null)
 		{
 			clientName = _clientName;
 			peerID = _peerID;
