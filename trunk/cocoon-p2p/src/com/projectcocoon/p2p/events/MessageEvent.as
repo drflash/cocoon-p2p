@@ -4,6 +4,7 @@ package com.projectcocoon.p2p.events
 	import com.projectcocoon.p2p.vo.MessageVO;
 	
 	import flash.events.Event;
+	import flash.net.NetGroup;
 	
 	public class MessageEvent extends Event
 	{
@@ -11,12 +12,20 @@ package com.projectcocoon.p2p.events
 		public static const DATA_RECEIVED:String = "dataReceived";
 		
 		[Bindable] public var message:MessageVO;
+		public var group:NetGroup;
 		
-		public function MessageEvent(type:String, data:MessageVO=null, bubbles:Boolean=false, cancelable:Boolean=false)
+		public function MessageEvent(type:String, message:MessageVO=null, group:NetGroup = null)
 		{
-			message = data;
-			super(type, bubbles, cancelable);
+			super(type);
+			this.message = message;
+			this.group = group;
 		}
+		
+		public override function clone():Event
+		{
+			return new MessageEvent(type, message, group);
+		}
+
 		
 	}
 }

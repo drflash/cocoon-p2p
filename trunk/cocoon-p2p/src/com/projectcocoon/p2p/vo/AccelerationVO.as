@@ -11,7 +11,7 @@ package com.projectcocoon.p2p.vo
 		public var accelerationZ:Number;
 		public var timestamp:Number;
 		
-		public function AccelerationVO(_client:ClientVO, _accelerationX:Number,_accelerationY:Number,_accelerationZ:Number,_timestamp:Number)
+		public function AccelerationVO(_client:ClientVO, _accelerationX:Number, _accelerationY:Number, _accelerationZ:Number, _timestamp:Number)
 		{
 			client = _client;
 			accelerationX = _accelerationX;
