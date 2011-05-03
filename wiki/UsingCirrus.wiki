@@ -3,9 +3,11 @@
 
 = Using Cocoon P2P with Adobe's Cirrus service =
 
-Cocoon P2P allows you to use Adobe's [http://labs.adobe.com/technologies/cirrus/ Cirrus peer introduction service]. By using Cirrus you can connect to other peers who are located outside your LAN. Cocoon P2P will still allow local clients to connect, so in essence, all local peers will still connect directly on the LAN, remote peers will use Cirrus to connect.
+Cocoon P2P allows you to use Adobe's [http://labs.adobe.com/technologies/cirrus/ Cirrus peer introduction service]. By using Cirrus you can connect to other peers who are located outside your LAN. Cocoon P2P will still allow local clients to connect, though. So in essence: all local peers will still connect directly on the LAN, remote peers will use Cirrus to connect.
 
-To use Cirrus you have to get yourself a Cirrus developer key which requires a free Adobe ID. More information can be found [http://labs.adobe.com/technologies/cirrus/ here].
+*Note:* To use Cirrus you have to get yourself a Cirrus developer key which requires a free Adobe ID. More information can be found [http://labs.adobe.com/technologies/cirrus/ here].
+
+To use it, just set the {{{useCirrus}}} property to true and specify your developer key with the {{{key}}} property.
 
 == Source code ==
 
