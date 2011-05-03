@@ -46,7 +46,6 @@ package com.projectcocoon.p2p
 	import flash.net.GroupSpecifier;
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
-	import flash.net.registerClassAlias;
 	import flash.sensors.Accelerometer;
 	
 	import mx.collections.ArrayCollection;
@@ -82,9 +81,12 @@ package com.projectcocoon.p2p
 		private var _clientName:String;
 		private var _localClient:ClientVO;
 		private var _clients:ArrayCollection = new ArrayCollection();
-		private var _groupName:String = "default";
+		private var _groupName:String = "com.projectcocoon.p2p.default";
+		private var _url:String = RTMFP_LOCAL;
+		private var _key:String;
+		private var _useCirrus:Boolean;
 		private var _multicastAddress:String = "225.225.0.1:30303";
-		private var _receiveLocal:Boolean = false;
+		private var _receiveLocal:Boolean;
 		private var _acc:Accelerometer;
 		private var _accelerometerInterval:uint = 0;
 		
@@ -106,14 +108,24 @@ package com.projectcocoon.p2p
 		 */		
 		public function connect():void
 		{
+			close();
 			_nc = new NetConnection();
 			_nc.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus);
-			_nc.connect(RTMFP_LOCAL);
+			if (_url == RTMFP_CIRRUS)
+			{
+				if (!key || key.length == 0)
+					throw new Error("To use Cirrus, you have to set your developer key")
+				_nc.connect(RTMFP_CIRRUS, key);
+			}
+			else
+			{
+				_nc.connect(_url);
+			}
 		}
 		
 		public function close():void
 		{
-			// todo
+			cleanup();
 		}
 		
 		/**
@@ -155,6 +167,9 @@ package com.projectcocoon.p2p
 		
 		// ========================== //
 		
+		/**
+		 * Number of connected clients
+		 */
 		[Bindable(event="clientsConnectedChange")]
 		public function get clientsConnected():uint
 		{
@@ -163,12 +178,20 @@ package com.projectcocoon.p2p
 			return 0;
 		}
 		
+		/**
+		 * ArrayCollection filled with ClientVO objects representing all clients
+		 */
 		[Bindable(event="clientsChange")]
 		public function get clients():ArrayCollection
 		{
 			return _clients;
 		}
 		
+		/**
+		 * When true, the connection will get created automatically after initialization<p/>
+		 * Defaults to true
+		 * @default true
+		 */
 		public function get autoConnect():Boolean
 		{
 			return _autoConnect;
@@ -178,6 +201,9 @@ package com.projectcocoon.p2p
 			_autoConnect = value;
 		}
 		
+		/**
+		 * The name of the local client as it will appear in the list of clients
+		 */
 		public function get clientName():String
 		{
 			return _clientName;
@@ -192,6 +218,13 @@ package com.projectcocoon.p2p
 			}
 		}		
 		
+		/**
+		 * Specifies the name of the NetGroup where other peers will join in. <p/>
+		 * <b>Note:</b> to avoid clashed with other applications, this should be something "unique",
+		 * e.g. you should prefix the name with a reverse DNS name or something like that<p/>
+		 * Defaults to com.projectcocoon.p2p.default
+		 * @default com.projectcocoon.p2p.default
+		 */
 		public function get groupName():String
 		{
 			return _groupName;
@@ -201,6 +234,11 @@ package com.projectcocoon.p2p
 			_groupName = val;
 		}
 		
+		/**
+		 * Specifies the local multicast address that will be used by all clients.<p/>
+		 * Defaults to 225.225.0.1:30303
+		 * @default 225.225.0.1:30303
+		 */ 
 		public function get multicastAddress():String
 		{
 			return _multicastAddress;
@@ -210,6 +248,12 @@ package com.projectcocoon.p2p
 			_multicastAddress = val;
 		}
 		
+		/**
+		 * When set to true, the local client will receive messages sent to other peers as well
+		 * (helpful when building chat applications)<p/>
+		 * Defaults to false
+		 * @default false
+		 */ 
 		public function get loopback():Boolean
 		{
 			return _receiveLocal;
@@ -219,19 +263,73 @@ package com.projectcocoon.p2p
 			_receiveLocal = bool;
 		}
 		
+		/**
+		 * Your Cirrus developer key, needed when using Cirrus
+		 * @see http://labs.adobe.com/technologies/cirrus/
+		 */ 
+		public function get key():String
+		{
+			return _key;
+		}
+		public function set key(value:String):void
+		{
+			_key = value;
+		}
+		
+		/**
+		 * The RTMFP URL to connect to. 
+		 * @default rtmfp:
+		 */
+		public function get url():String
+		{
+			return _url;
+		}
+		public function set url(value:String):void
+		{
+			_url = value;
+		}
+		
+		/**
+		 * When set to true, the connection will be made against the Cirrus peer introduction service
+		 * which allows to connect to peers on different networks instead of using local peer discovery<p/>
+		 * Defaults to false
+		 * @default false
+		 */
+		public function get useCirrus():Boolean
+		{
+			return _useCirrus;
+		}
+		public function set useCirrus(value:Boolean):void
+		{
+			_useCirrus = value;
+			if (_useCirrus)
+				_url = RTMFP_CIRRUS;
+		}
+
+		/**
+		 * Sets the desired time interval (in milliseconds) to use for reading updates from the Accelerometer
+		 */
 		public function get accelerometerInterval():uint
 		{
 			return _accelerometerInterval;	
 		}
 		public function set accelerometerInterval(val:uint):void
 		{
+			if (!Accelerometer.isSupported)
+				return;
+			
 			_accelerometerInterval = val;
-			if(_accelerometerInterval > 0) {
+			
+			if (_accelerometerInterval > 0) 
+			{
 				_acc = new Accelerometer();
 				_acc.setRequestedUpdateInterval(accelerometerInterval);
 				_acc.addEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
-			} else {
+			} 
+			else if (_acc) 
+			{
 				_acc.removeEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
+				_acc = null;
 			}
 		}
 		
@@ -243,6 +341,47 @@ package com.projectcocoon.p2p
 			ClassRegistry.registerClasses();
 		}
 		
+		private function cleanup():void
+		{
+			// do some cleanup
+			if (_nc)
+			{
+				_nc.removeEventListener(NetStatusEvent.NET_STATUS, onNetStatus);
+				if (_nc.connected)
+					_nc.close();
+				_nc = null;
+			}
+			
+			if (_groupManager)
+			{
+				_groupManager.removeEventListener(GroupEvent.GROUP_CONNECTED, onGroupConnected);
+				_groupManager.removeEventListener(GroupEvent.GROUP_CLOSED, onGroupClosed);
+				_groupManager.removeEventListener(ClientEvent.CLIENT_ADDED, onClientAdded);
+				_groupManager.removeEventListener(ClientEvent.CLIENT_REMOVED, onClientRemoved);
+				_groupManager.removeEventListener(ClientEvent.CLIENT_UPDATE, onClientUpdate);
+				_groupManager.removeEventListener(MessageEvent.DATA_RECEIVED, onDataReceived);
+				_groupManager = null;
+			}
+			
+			if (_acc)
+			{
+				_acc.removeEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
+				_acc = null;
+			}
+			
+			if (_group)
+				_group = null;
+			
+			if (_localClient)
+				_localClient = null;
+			
+			if (_clients)
+				_clients.removeAll();
+			else
+				_clients = new ArrayCollection();
+			dispatchEvent(new Event("clientsChange"));		
+		}
+		
 		private function setupGroup():void
 		{
 			// Groupspec for the main group
@@ -252,6 +391,7 @@ package com.projectcocoon.p2p
 			_groupSpec.ipMulticastMemberUpdatesEnabled = true;
 			_groupSpec.objectReplicationEnabled = true;
 			_groupSpec.addIPMulticastAddress(multicastAddress);
+			_groupSpec.serverChannelEnabled = true;
 			
 			// create and setup the GroupManager
 			_groupManager = new GroupManager(_nc);

@@ -219,15 +219,31 @@ package com.projectcocoon.p2p.managers
 		private function cleanup(netGroup:NetGroup):void
 		{
 			netGroup.removeEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);
-			dispatchEvent(new GroupEvent(GroupEvent.GROUP_CLOSED, netGroup));
+			try
+			{
+				netGroup.close();	
+			}
+			catch (e:Error)
+			{
+			}
 			delete groups[netGroup];
+			dispatchEvent(new GroupEvent(GroupEvent.GROUP_CLOSED, netGroup));
 		}
 		
 		private function cleanupAll():void
 		{
 			netConnection.removeEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);
-			for each (var netGroup:NetGroup in groups)
+			for (var netGroup:* in groups)
+			{
 				netGroup.removeEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);
+				try
+				{
+					netGroup.close();	
+				}
+				catch (e:Error)
+				{
+				}
+			}
 			groups = null;
 		}
 		
