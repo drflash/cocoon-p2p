@@ -1,4 +1,5 @@
 #summary Using Cocoon P2P with Adobe's Cirrus service
+#labels Featured
 
 = Using Cocoon P2P with Adobe's Cirrus service =
 
