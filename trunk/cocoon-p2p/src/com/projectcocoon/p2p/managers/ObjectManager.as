@@ -3,7 +3,6 @@ package com.projectcocoon.p2p.managers
 	import com.projectcocoon.p2p.util.SerializationUtil;
 	import com.projectcocoon.p2p.vo.ObjectMetadataVO;
 	
-	import flash.errors.IllegalOperationError;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.utils.ByteArray;
@@ -29,7 +28,7 @@ package com.projectcocoon.p2p.managers
 		public function share(value:Object, defaultGroupName:String, groupID:String = null):void
 		{
 			if (!value)
-				throw IllegalOperationError("value must not be null");
+				throw new ArgumentError("value must not be null");
 			
 			var data:ByteArray = new SerializationUtil().serialize(value);
 			var metadata:ObjectMetadataVO = getMetaData(data);
