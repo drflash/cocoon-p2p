@@ -2,16 +2,18 @@ package com.projectcocoon.p2p.managers
 {
 	import com.projectcocoon.p2p.NetStatusCode;
 	import com.projectcocoon.p2p.command.CommandList;
-	import com.projectcocoon.p2p.command.CommandScope;
 	import com.projectcocoon.p2p.command.CommandType;
 	import com.projectcocoon.p2p.events.ClientEvent;
 	import com.projectcocoon.p2p.events.GroupEvent;
 	import com.projectcocoon.p2p.events.MessageEvent;
+	import com.projectcocoon.p2p.events.ObjectEvent;
 	import com.projectcocoon.p2p.vo.ClientVO;
 	import com.projectcocoon.p2p.vo.MessageVO;
+	import com.projectcocoon.p2p.vo.ObjectMetadataVO;
 	
 	import flash.events.EventDispatcher;
 	import flash.events.NetStatusEvent;
+	import flash.net.GroupSpecifier;
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
 	import flash.utils.Dictionary;
@@ -22,27 +24,38 @@ package com.projectcocoon.p2p.managers
 	[Event(name="clientUpdate", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientRemoved", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="dataReceived", type="com.projectcocoon.p2p.events.MessageEvent")]
+	[Event(name="objectAnnounced", type="com.projectcocoon.p2p.events.ObjectEvent")]
+	[Event(name="objectRequest", type="com.projectcocoon.p2p.events.ObjectEvent")]
 	public class GroupManager extends EventDispatcher
 	{
 		
 		private var netConnection:NetConnection;
 		private var groups:Dictionary = new Dictionary();
+		private var multicastAddress:String;
 		
 		
-		// ========================== //
-		
-		public function GroupManager(netConnection:NetConnection)
+		public function GroupManager(netConnection:NetConnection, multicastAddress:String)
 		{
 			this.netConnection = netConnection;
 			this.netConnection.addEventListener(NetStatusEvent.NET_STATUS, netStatusHandler, false, 9999);
+			this.multicastAddress = multicastAddress;
 		}
 		
-		public function createNetGroup(groupSpec:String):NetGroup
+		public function createNetGroup(name:String):NetGroup
 		{
-			var group:NetGroup = new NetGroup(netConnection, groupSpec);
+			var groupSpec:GroupSpecifier = new GroupSpecifier(name);
+			groupSpec.postingEnabled = true;
+			groupSpec.routingEnabled = true;
+			groupSpec.ipMulticastMemberUpdatesEnabled = true;
+			groupSpec.objectReplicationEnabled = true;
+			groupSpec.addIPMulticastAddress(multicastAddress);
+			groupSpec.serverChannelEnabled = true;
+			
+			var groupSpecString:String = groupSpec.groupspecWithAuthorizations();
+			var group:NetGroup = new NetGroup(netConnection, groupSpecString);
 			group.addEventListener(NetStatusEvent.NET_STATUS, netStatusHandler, false, 9999);
 			
-			var groupInfo:GroupInfo = new GroupInfo(groupSpec);
+			var groupInfo:GroupInfo = new GroupInfo(groupSpecString);
 			groups[group] = groupInfo;
 			
 			return group;
@@ -55,39 +68,32 @@ package com.projectcocoon.p2p.managers
 		
 		public function announceToGroup(netGroup:NetGroup):MessageVO
 		{
+			return sendMessageToAll(null, netGroup, CommandType.SERVICE, CommandList.ANNOUNCE_NAME);
+		}
+		
+		public function sendMessageToAll(value:Object, netGroup:NetGroup, type:String = CommandType.MESSAGE, command:String = null):MessageVO
+		{
 			var client:ClientVO = getLocalClient(netGroup);
 			if (client)
 			{
-				var msg:MessageVO = new MessageVO(client, null, null, CommandType.SERVICE, CommandScope.ALL, CommandList.ANNOUNCE_NAME);
+				var msg:MessageVO = new MessageVO(client, value, null, type, command);
 				netGroup.post(msg);
 				return msg;
 			}
 			return null;
 		}
 		
-		public function sendMessageToAll(value:Object, netGroup:NetGroup):MessageVO
+		public function sendMessageToClient(value:Object, netGroup:NetGroup, client:ClientVO, type:String = CommandType.MESSAGE, command:String = null):MessageVO
+		{
+			return sendMessageToGroupAddress(value, netGroup, client.groupID, type, command);
+		}
+		
+		public function sendMessageToGroupAddress(value:Object, netGroup:NetGroup, groupAddress:String,type:String = CommandType.MESSAGE, command:String = null):MessageVO
 		{
 			var client:ClientVO = getLocalClient(netGroup);
 			if (client)
 			{
-				var msg:MessageVO = new MessageVO(client, value, null, CommandType.MESSAGE, CommandScope.ALL);
-				netGroup.post(msg);
-				return msg;
-			}
-			return null;
-		}
-		
-		public function sendMessageToClient(value:Object, netGroup:NetGroup, client:ClientVO):MessageVO
-		{
-			return sendMessageToGroupAddress(value, netGroup, client.groupID);
-		}
-		
-		public function sendMessageToGroupAddress(value:Object, netGroup:NetGroup, groupAddress:String):MessageVO
-		{
-			var client:ClientVO = getLocalClient(netGroup);
-			if (client)
-			{
-				var msg:MessageVO = new MessageVO(client, value, groupAddress, CommandType.MESSAGE, CommandScope.DIRECT);
+				var msg:MessageVO = new MessageVO(client, value, groupAddress, type, command);
 				netGroup.sendToNearest(msg, groupAddress);
 				return msg;
 			}
@@ -175,47 +181,68 @@ package com.projectcocoon.p2p.managers
 		
 		private function handleSendTo(event:NetStatusEvent):void
 		{
+			
+			var message:MessageVO = event.info.message as MessageVO;
+			
+			if (!message)
+				return;
+			
 			if (event.info.fromLocal == true) 
 			{
-				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, event.info.message as MessageVO, event.target as NetGroup));
+				if (message.command == CommandList.ANNOUNCE_SHARING)
+				{
+					dispatchEvent(new ObjectEvent(ObjectEvent.OBJECT_ANNOUNCED, message.data as ObjectMetadataVO));
+				}
+				else
+				{
+					dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, message, event.target as NetGroup));
+				}
 			} 
 			else 
 			{
-				event.target.sendToNearest(event.info.message, event.info.message.destination);
+				event.target.sendToNearest(message, message.destination);
 			}
 		}
 		
 		private function handlePosting(event:NetStatusEvent):void
 		{
-			var msg:MessageVO = event.info.message as MessageVO;
+			var message:MessageVO = event.info.message as MessageVO;
 				
-			if (!msg)
+			if (!message)
 				return;
 			
 			var group:NetGroup = event.target as NetGroup; 
 			var groupInfo:GroupInfo = groups[group];
 			
-			if (msg.type == CommandType.SERVICE) 
+			if (message.type == CommandType.SERVICE) 
 			{
-				if (msg.command == CommandList.ANNOUNCE_NAME) 
+				if (message.command == CommandList.ANNOUNCE_NAME) 
 				{
 					for each (var client:ClientVO in groupInfo.clients) 
 					{
-						if(client.groupID == msg.client.groupID) 
+						if(client.groupID == message.client.groupID) 
 						{
-							client.clientName = msg.client.clientName;
+							client.clientName = message.client.clientName;
 							dispatchEvent(new ClientEvent(ClientEvent.CLIENT_UPDATE, client, group));
 							break;
 						}
 					}
 				}
+				else if (message.command == CommandList.ANNOUNCE_SHARING)
+				{
+					dispatchEvent(new ObjectEvent(ObjectEvent.OBJECT_ANNOUNCED, message.data as ObjectMetadataVO));
+				}
+				else if (message.command == CommandList.REQUEST_OBJECT)
+				{
+					dispatchEvent(new ObjectEvent(ObjectEvent.OBJECT_REQUEST, message.data as ObjectMetadataVO));
+				}
 			} 
 			else 
 			{
-				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, msg, group));
+				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, message, group));
 			}
 		}		
-		
+				
 		private function cleanup(netGroup:NetGroup):void
 		{
 			netGroup.removeEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);

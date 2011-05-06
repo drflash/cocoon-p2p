@@ -4,7 +4,6 @@
     <classEntry path="com.projectcocoon.p2p.LocalNetworkDiscovery"/>
     <classEntry path="com.projectcocoon.p2p.NetStatusCode"/>
     <classEntry path="com.projectcocoon.p2p.command.CommandList"/>
-    <classEntry path="com.projectcocoon.p2p.command.CommandScope"/>
     <classEntry path="com.projectcocoon.p2p.command.CommandType"/>
     <classEntry path="com.projectcocoon.p2p.events.AccelerationEvent"/>
     <classEntry path="com.projectcocoon.p2p.events.ClientEvent"/>
@@ -19,7 +18,10 @@
     <classEntry path="com.projectcocoon.p2p.vo.ClientVO"/>
     <classEntry path="com.projectcocoon.p2p.vo.MessageVO"/>
     <classEntry path="com.projectcocoon.p2p.vo.ObjectMetadataVO"/>
+    <classEntry path="com.projectcocoon.p2p.util.FileUtil"/>
   </includeClasses>
   <includeResources/>
-  <namespaceManifests/>
+  <namespaceManifests>
+    <namespaceManifestEntry manifest="manifest.xml" namespace="http://com.projectcocoon.p2p"/>
+  </namespaceManifests>
 </flexLibProperties>
