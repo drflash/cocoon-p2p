@@ -26,18 +26,19 @@ package com.projectcocoon.p2p
 {
 	
 	import com.projectcocoon.p2p.command.CommandList;
-	import com.projectcocoon.p2p.command.CommandScope;
 	import com.projectcocoon.p2p.command.CommandType;
 	import com.projectcocoon.p2p.events.AccelerationEvent;
 	import com.projectcocoon.p2p.events.ClientEvent;
 	import com.projectcocoon.p2p.events.GroupEvent;
 	import com.projectcocoon.p2p.events.MessageEvent;
+	import com.projectcocoon.p2p.events.ObjectEvent;
 	import com.projectcocoon.p2p.managers.GroupManager;
 	import com.projectcocoon.p2p.managers.ObjectManager;
 	import com.projectcocoon.p2p.util.ClassRegistry;
 	import com.projectcocoon.p2p.vo.AccelerationVO;
 	import com.projectcocoon.p2p.vo.ClientVO;
 	import com.projectcocoon.p2p.vo.MessageVO;
+	import com.projectcocoon.p2p.vo.ObjectMetadataVO;
 	
 	import flash.events.AccelerometerEvent;
 	import flash.events.Event;
@@ -51,6 +52,7 @@ package com.projectcocoon.p2p
 	import mx.collections.ArrayCollection;
 	import mx.core.IMXMLObject;
 
+	
 	[Event(name="groupConnected", type="com.projectcocoon.p2p.events.GroupEvent")]
 	[Event(name="groupClosed", type="com.projectcocoon.p2p.events.GroupEvent")]
 	[Event(name="clientAdded", type="com.projectcocoon.p2p.events.ClientEvent")]
@@ -59,6 +61,9 @@ package com.projectcocoon.p2p
 	[Event(name="clientRemoved", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="dataReceived", type="com.projectcocoon.p2p.events.MessageEvent")]
 	[Event(name="accelerometerUpdate", type="com.projectcocoon.p2p.events.AccelerationEvent")]
+	[Event(name="objectAnnounced", type="com.projectcocoon.p2p.events.ObjectEvent")]
+	[Event(name="objectProgress", type="com.projectcocoon.p2p.events.ObjectEvent")]
+	[Event(name="objectComplete", type="com.projectcocoon.p2p.events.ObjectEvent")]
 	public class LocalNetworkDiscovery extends EventDispatcher implements IMXMLObject
 	{
 		/**
@@ -72,16 +77,18 @@ package com.projectcocoon.p2p
 		 */ 
 		private static const RTMFP_CIRRUS:String = "rtmfp://p2p.rtmfp.net";
 	
+		private var _clientName:String;
+		private var _groupName:String = "com.projectcocoon.p2p.default";
 		private var _autoConnect:Boolean = true;
 		private var _nc:NetConnection;
+		private var _group:NetGroup;
 		private var _groupSpec:GroupSpecifier;
 		private var _groupManager:GroupManager;
 		private var _objectManager:ObjectManager;
-		private var _group:NetGroup;
-		private var _clientName:String;
 		private var _localClient:ClientVO;
 		private var _clients:ArrayCollection = new ArrayCollection();
-		private var _groupName:String = "com.projectcocoon.p2p.default";
+		private var _sharedObjects:ArrayCollection;
+		private var _receivedObjects:ArrayCollection;
 		private var _url:String = RTMFP_LOCAL;
 		private var _key:String;
 		private var _useCirrus:Boolean;
@@ -151,18 +158,40 @@ package com.projectcocoon.p2p
 				dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, msg));
 		}
 		
-		public function shareWithClient(value:Object, groupID:String):void
+		/**
+		 * Shares an arbitrary object (any type: object, primitive, etc.) with a specific peer in the p2p network.
+		 * The peer will receive an ObjectEvent.OBJECT_ANNOUNCED event. To request the annonced object,
+		 * the peer has to call requestObject()
+		 * @param value the object to share. Can be any type.
+		 */
+		public function shareWithClient(value:Object, groupID:String, metadata:Object = null):void
 		{
-			if (!_objectManager)
-				_objectManager = new ObjectManager(_groupManager);
-			_objectManager.share(value, _groupName, groupID);
+			share(value, groupID, metadata);
 		}
 		
-		public function shareWithAll(value:Object):void
+		/**
+		 * Shares an arbitrary object (any type: object, primitive, etc.) with all peers in the p2p network.
+		 * The peer will receive an ObjectEvent.OBJECT_ANNOUNCED event. To request the annonced object,
+		 * the peer has to call requestObject()
+		 * @param value the object to share. Can be any type.
+		 */
+		public function shareWithAll(value:Object, metadata:Object = null):void
 		{
-			if (!_objectManager)
-				_objectManager = new ObjectManager(_groupManager);
-			_objectManager.share(value, _groupName);
+			share(value, null, metadata);
+		}
+		
+		/**
+		 * Requests a shared object. Once requested, the object will be replicated.
+		 * During replication, ObjectEvent.OBJECT_PROGRESS events get dispatched.
+		 * When the object replication is finished, an ObjectEvent.OBJECT_COMPLETE event gets dispatched
+		 * @param metadata the metadata of the requested object
+		 * 
+		 */		
+		public function requestObject(metadata:ObjectMetadataVO):void
+		{
+			var msg:MessageVO = getObjectManager().request(metadata);
+			if (msg)
+				receivedObjects.addItem(msg.data);
 		}
 		
 		// ========================== //
@@ -185,6 +214,34 @@ package com.projectcocoon.p2p
 		public function get clients():ArrayCollection
 		{
 			return _clients;
+		}
+		
+		/**
+		 * ArrayCollection filled with ObjectMetadataVO objects representing all objects shared by the local client
+		 */		
+		[Bindable(event="sharedObjectsChange")]
+		public function get sharedObjects():ArrayCollection
+		{
+			if (!_sharedObjects)
+			{
+				_sharedObjects = new ArrayCollection();
+				dispatchEvent(new Event("sharedObjectsChange"));
+			}
+			return _sharedObjects;
+		}
+		
+		/**
+		 * ArrayCollection filled with ObjectMetadataVO objects representing all objects received by this client
+		 */		
+		[Bindable(event="receivedObjectsChange")]
+		public function get receivedObjects():ArrayCollection
+		{
+			if (!_receivedObjects)
+			{
+				_receivedObjects = new ArrayCollection();
+				dispatchEvent(new Event("receivedObjectsChange"));
+			}
+			return _receivedObjects;
 		}
 		
 		/**
@@ -360,7 +417,15 @@ package com.projectcocoon.p2p
 				_groupManager.removeEventListener(ClientEvent.CLIENT_REMOVED, onClientRemoved);
 				_groupManager.removeEventListener(ClientEvent.CLIENT_UPDATE, onClientUpdate);
 				_groupManager.removeEventListener(MessageEvent.DATA_RECEIVED, onDataReceived);
+				_groupManager.removeEventListener(ObjectEvent.OBJECT_ANNOUNCED, onObjectAnnounced);
 				_groupManager = null;
+			}
+			
+			if (_objectManager)
+			{
+				_objectManager.removeEventListener(ObjectEvent.OBJECT_PROGRESS, onObjectProgress);
+				_objectManager.removeEventListener(ObjectEvent.OBJECT_COMPLETE, onObjectComplete);
+				_objectManager = null;
 			}
 			
 			if (_acc)
@@ -384,26 +449,20 @@ package com.projectcocoon.p2p
 		
 		private function setupGroup():void
 		{
-			// Groupspec for the main group
-			_groupSpec = new GroupSpecifier(groupName);
-			_groupSpec.postingEnabled = true;
-			_groupSpec.routingEnabled = true;
-			_groupSpec.ipMulticastMemberUpdatesEnabled = true;
-			_groupSpec.objectReplicationEnabled = true;
-			_groupSpec.addIPMulticastAddress(multicastAddress);
-			_groupSpec.serverChannelEnabled = true;
 			
 			// create and setup the GroupManager
-			_groupManager = new GroupManager(_nc);
+			_groupManager = new GroupManager(_nc, multicastAddress);
+			
 			_groupManager.addEventListener(GroupEvent.GROUP_CONNECTED, onGroupConnected);
 			_groupManager.addEventListener(GroupEvent.GROUP_CLOSED, onGroupClosed);
 			_groupManager.addEventListener(ClientEvent.CLIENT_ADDED, onClientAdded);
 			_groupManager.addEventListener(ClientEvent.CLIENT_REMOVED, onClientRemoved);
 			_groupManager.addEventListener(ClientEvent.CLIENT_UPDATE, onClientUpdate);
 			_groupManager.addEventListener(MessageEvent.DATA_RECEIVED, onDataReceived);
-				
+			_groupManager.addEventListener(ObjectEvent.OBJECT_ANNOUNCED, onObjectAnnounced);	
+			
 			// create the group
-			_group = _groupManager.createNetGroup(_groupSpec.groupspecWithAuthorizations());
+			_group = _groupManager.createNetGroup(groupName);
 			
 		}
 
@@ -414,6 +473,17 @@ package com.projectcocoon.p2p
 			_localClient.clientName = getClientName();
 		}
 		
+		private function getObjectManager():ObjectManager
+		{
+			if (!_objectManager)
+			{
+				_objectManager = new ObjectManager(_groupManager, _group);
+				_objectManager.addEventListener(ObjectEvent.OBJECT_PROGRESS, onObjectProgress);
+				_objectManager.addEventListener(ObjectEvent.OBJECT_COMPLETE, onObjectComplete);
+			}
+			return _objectManager;
+		}
+
 		private function getClientName():String
 		{
 			if(!_clientName) 
@@ -425,6 +495,12 @@ package com.projectcocoon.p2p
 		{
 			// announce ourself to the other peers
 			_groupManager.announceToGroup(_group);
+		}
+		
+		private function share(value:Object, groupID:String, metadata:Object):void
+		{
+			var msg:MessageVO = getObjectManager().share(value, groupID, metadata);
+			sharedObjects.addItem(msg.data); // add the ObjectMetadataVO to the list of shared Objects
 		}
 		
 		// ============= Event Handlers ============= //
@@ -499,12 +575,30 @@ package com.projectcocoon.p2p
 		private function onAccelerometer(evt:AccelerometerEvent):void
 		{
 			var acc:AccelerationVO = new AccelerationVO(_localClient, evt.accelerationX, evt.accelerationY, evt.accelerationZ, evt.timestamp);
-			var msg:MessageVO = new MessageVO(_localClient, acc, null, CommandType.SERVICE, CommandScope.ALL, CommandList.ACCELEROMETER);
+			var msg:MessageVO = new MessageVO(_localClient, acc, null, CommandType.SERVICE, CommandList.ACCELEROMETER);
 			if(loopback) 
 				dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
 			_group.post(msg);
 		}
 
+		private function onObjectAnnounced(event:ObjectEvent):void
+		{
+			// distribute the event
+			dispatchEvent(event.clone());	
+		}
+		
+		private function onObjectComplete(event:ObjectEvent):void
+		{
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
+		private function onObjectProgress(event:ObjectEvent):void
+		{
+			// distribute the event
+			dispatchEvent(event.clone());
+		}
+		
 	}
 	
 }

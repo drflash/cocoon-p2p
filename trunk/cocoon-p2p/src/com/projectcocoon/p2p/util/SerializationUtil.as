@@ -12,6 +12,7 @@ package com.projectcocoon.p2p.util
 				var byteArray:ByteArray = new ByteArray();
 				byteArray.writeObject(object);
 				byteArray.position = 0;
+				byteArray.compress();
 				return byteArray;
 			}
 			catch (e:Error)
@@ -24,6 +25,7 @@ package com.projectcocoon.p2p.util
 		{
 			try
 			{
+				bytes.uncompress();
 				bytes.position = 0;
 				return bytes.readObject();
 			}

@@ -7,12 +7,27 @@ package com.projectcocoon.p2p.vo
 		public var chunks:uint;
 		public var info:Object;
 		
-		public function ObjectMetadataVO(identifier:String = null, size:uint = 0, chunks:uint = 0, info:Object = null)
+		[Transient]
+		public var chunksReceived:int;
+		
+		[Transient]
+		public var object:Object;
+		
+		public function ObjectMetadataVO()
 		{
-			this.identifier = identifier;
-			this.size = size;
-			this.chunks = chunks;
-			this.info = info;
+			chunksReceived = 0;
+		}
+		
+		public function get progress():Number
+		{
+			if (chunks > 0)
+				return chunksReceived / chunks;
+			return 0;
+		}
+		
+		public function get isComplete():Boolean
+		{
+			return progress == 1;
 		}
 	}
 }
