@@ -5,6 +5,7 @@
 
 Cocoon P2P lets you send and listen for accelerometer information over the NetGroup for use in games etc.
 
+An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
 
 == Source code ==
 
