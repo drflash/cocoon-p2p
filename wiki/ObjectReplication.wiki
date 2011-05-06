@@ -3,7 +3,7 @@
 
 = Using Cocoon P2P object replication =
 
-Cocoon P2P makes replicating (sharing) arbitrary objects (primitive data, objects, files, etc.) easy. Just pass an object to LocalNetworkDiscovery's object replication methods and the object will get replicated on all peers within the network automatically. Directed replication (so only a specific peer gets the object) is also supported.
+Cocoon P2P makes replicating (sharing) arbitrary objects (primitive data, objects, files, etc.) easy. Just pass an object to LocalNetworkDiscovery''s object replication methods and the object will get replicated on all peers within the network automatically. Directed replication (so only a specific peer gets the object) is also supported.
 
 Objects get split up into chunks by Cocoon P2P and will get resembled on the receiving side. Also, all peers that receive chunks will automatically become "seeders".
 
@@ -36,14 +36,7 @@ In theory objects of any size can get replicated but for larger objects (i.e. fi
 			protected function saveFile(event:MouseEvent):void
 			{
 				var data:ObjectMetadataVO = listReceived.selectedItem as ObjectMetadataVO;
-				if (data.isComplete)
-				{
-					fileUtil.save(data.object as ByteArray, data.info as String);
-				}
-				else
-				{
-					
-				}
+				fileUtil.save(data.object as ByteArray, data.info as String);
 			}
 			
 			private function loadCompleteHandler(event:Event):void
@@ -85,13 +78,13 @@ In theory objects of any size can get replicated but for larger objects (i.e. fi
 	</fx:Script>
 	<fx:Declarations>
 		<p2p:LocalNetworkDiscovery id="channel" 
-								   clientName="{'User' + Math.ceil(Math.random() * 100)}"
-								   objectAnnounced="objectAnnouncedHandler(event)"
-								   objectProgress="objectProgressHandler(event)"/>
+					   clientName="{'User' + Math.ceil(Math.random() * 100)}"
+					   objectAnnounced="objectAnnouncedHandler(event)"
+					   objectProgress="objectProgressHandler(event)"/>
 		
 		<p2p:FileUtil id="fileUtil"
-					  loadComplete="loadCompleteHandler(event)"
-					  saveComplete="saveCompleteHandler(event)"/>
+			      loadComplete="loadCompleteHandler(event)"
+			      saveComplete="saveCompleteHandler(event)"/>
 	</fx:Declarations>
 	
 	<s:Panel title="File Sharing Example" width="600" height="400" verticalCenter="0" horizontalCenter="0">
