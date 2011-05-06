@@ -9,6 +9,8 @@ Objects get split up into chunks by Cocoon P2P and will get resembled on the rec
 
 In theory objects of any size can get replicated but for larger objects (i.e. files) it may be a good idea to use buffered I/O or streams - these are not provided by Cocoon P2P however.
 
+An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
+
 == Source code ==
 
 {{{
