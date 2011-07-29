@@ -44,7 +44,6 @@ package com.projectcocoon.p2p
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.NetStatusEvent;
-	import flash.net.GroupSpecifier;
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
 	import flash.sensors.Accelerometer;
@@ -82,7 +81,6 @@ package com.projectcocoon.p2p
 		private var _autoConnect:Boolean = true;
 		private var _nc:NetConnection;
 		private var _group:NetGroup;
-		private var _groupSpec:GroupSpecifier;
 		private var _groupManager:GroupManager;
 		private var _objectManager:ObjectManager;
 		private var _localClient:ClientVO;
@@ -102,6 +100,16 @@ package com.projectcocoon.p2p
 		public function LocalNetworkDiscovery()
 		{
 			registerClasses();
+		}
+		
+		public function get connection():NetConnection
+		{
+			return _nc;
+		}
+		
+		public function get spec():String
+		{
+			return _groupManager.getGroupSpec(_group);
 		}
 		
 		public function initialized(document:Object, id:String):void
@@ -195,6 +203,14 @@ package com.projectcocoon.p2p
 		}
 		
 		// ========================== //
+		
+		/**
+		 * The local ClientVO object
+		 */
+		public function get localClient():ClientVO
+		{
+			return _localClient;
+		}
 		
 		/**
 		 * Number of connected clients
@@ -377,17 +393,8 @@ package com.projectcocoon.p2p
 			
 			_accelerometerInterval = val;
 			
-			if (_accelerometerInterval > 0) 
-			{
-				_acc = new Accelerometer();
-				_acc.setRequestedUpdateInterval(accelerometerInterval);
-				_acc.addEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
-			} 
-			else if (_acc) 
-			{
-				_acc.removeEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
-				_acc = null;
-			}
+			if (_acc)
+				_acc.setRequestedUpdateInterval(_accelerometerInterval);
 		}
 		
 		
@@ -522,15 +529,39 @@ package com.projectcocoon.p2p
 				_localClient = _groupManager.getLocalClient(_group);
 				_localClient.clientName = getClientName();
 			}
+			setupAccelerometer(); 
 			// distribute the event
 			dispatchEvent(event.clone());
 		}
 		
+		private function setupAccelerometer():void
+		{
+			shutdownAccelerometer();
+			if (Accelerometer.isSupported && _accelerometerInterval > 0) 
+			{
+				_acc = new Accelerometer();
+				_acc.setRequestedUpdateInterval(_accelerometerInterval);
+				_acc.addEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
+			}
+		}
+		
+		private function shutdownAccelerometer():void
+		{
+			if (_acc) 
+			{
+				_acc.removeEventListener(AccelerometerEvent.UPDATE, onAccelerometer);
+				_acc = null;
+			}
+		}
+		
 		private function onGroupClosed(event:GroupEvent):void
 		{
+			// shutdown Accelerometer
+			shutdownAccelerometer();
 			// distribute the event
 			dispatchEvent(event.clone());
 		}
+		
 		
 		private function onClientAdded(event:ClientEvent):void
 		{
@@ -575,10 +606,9 @@ package com.projectcocoon.p2p
 		private function onAccelerometer(evt:AccelerometerEvent):void
 		{
 			var acc:AccelerationVO = new AccelerationVO(_localClient, evt.accelerationX, evt.accelerationY, evt.accelerationZ, evt.timestamp);
-			var msg:MessageVO = new MessageVO(_localClient, acc, null, CommandType.SERVICE, CommandList.ACCELEROMETER);
+			var msg:MessageVO = _groupManager.sendMessageToAll(acc, _group, CommandType.SERVICE, CommandList.ACCELEROMETER);
 			if(loopback) 
-				dispatchEvent(new AccelerationEvent(AccelerationEvent.ACCELEROMETER, acc));
-			_group.post(msg);
+				onDataReceived(new MessageEvent(MessageEvent.DATA_RECEIVED, msg, _group));
 		}
 
 		private function onObjectAnnounced(event:ObjectEvent):void

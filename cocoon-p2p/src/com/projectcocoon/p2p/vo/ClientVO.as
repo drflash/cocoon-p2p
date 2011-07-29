@@ -12,11 +12,11 @@ package com.projectcocoon.p2p.vo
 		[Transient]
 		public var isLocal:Boolean;
 		
-		public function ClientVO(_clientName:String = null, _peerID:String = null, _groupID:String = null)
+		public function ClientVO(clientName:String = null, peerID:String = null, groupID:String = null)
 		{
-			clientName = _clientName;
-			peerID = _peerID;
-			groupID = _groupID;
+			this.clientName = clientName;
+			this.peerID = peerID;
+			this.groupID = groupID;
 		}
 		
 	}

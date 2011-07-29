@@ -15,13 +15,13 @@ package com.projectcocoon.p2p.vo
 		public var sequenceId:uint;
 		public var timestamp:Date;
 		
-		public function MessageVO(_client:ClientVO=null, _data:Object=null, _destination:String="", _type:String="", _command:String="")
+		public function MessageVO(client:ClientVO=null, data:Object=null, destination:String="", type:String="", command:String="")
 		{
-			client = _client;
-			data = _data;
-			destination = _destination;
-			type = _type;
-			command = _command;
+			this.client = client;
+			this.data = data;
+			this.destination = destination;
+			this.type = type;
+			this.command = command;
 			timestamp = new Date();
 			sequenceId = ++SEQ;
 		}

@@ -125,6 +125,15 @@ package com.projectcocoon.p2p.managers
 			return new Vector.<ClientVO>();
 		}
 		
+		public function getGroupSpec(netGroup:NetGroup):String
+		{
+			var groupInfo:GroupInfo = groups[netGroup];
+			if (groupInfo)
+			{
+				return groupInfo.groupSpec;
+			}
+			return null
+		}
 		
 		// ============= Private ============= //
 		
@@ -236,6 +245,10 @@ package com.projectcocoon.p2p.managers
 				{
 					dispatchEvent(new ObjectEvent(ObjectEvent.OBJECT_REQUEST, message.data as ObjectMetadataVO));
 				}
+				else if (message.command == CommandList.ACCELEROMETER)
+				{
+					dispatchEvent(new MessageEvent(MessageEvent.DATA_RECEIVED, message, group));
+				}
 			} 
 			else 
 			{
@@ -315,14 +328,12 @@ import flash.net.NetConnection;
 
 class GroupInfo
 {
-	public var peerIds:Vector.<String>;
 	public var clients:Vector.<ClientVO>;
 	public var groupSpec:String;
 	
 	public function GroupInfo(groupSpec:String)
 	{
 		this.groupSpec = groupSpec;
-		peerIds = new Vector.<String>();
 		clients = new Vector.<ClientVO>();
 	}
 	
