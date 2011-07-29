@@ -17,5 +17,9 @@ package com.projectcocoon.p2p.events
 			super(type, bubbles, cancelable);
 		}
 		
+		override public function clone():Event
+		{
+			return new AccelerationEvent(type, acceleration, bubbles, cancelable);
+		}
 	}
 }

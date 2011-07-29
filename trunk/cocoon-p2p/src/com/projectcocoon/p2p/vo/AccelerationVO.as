@@ -11,13 +11,13 @@ package com.projectcocoon.p2p.vo
 		public var accelerationZ:Number;
 		public var timestamp:Number;
 		
-		public function AccelerationVO(_client:ClientVO, _accelerationX:Number, _accelerationY:Number, _accelerationZ:Number, _timestamp:Number)
+		public function AccelerationVO(client:ClientVO = null, accelerationX:Number = Number.NaN, accelerationY:Number = Number.NaN, accelerationZ:Number = Number.NaN, timestamp:Number = Number.NaN)
 		{
-			client = _client;
-			accelerationX = _accelerationX;
-			accelerationY = _accelerationY;
-			accelerationZ = _accelerationZ;
-			timestamp = _timestamp;
+			this.client = client;
+			this.accelerationX = accelerationX;
+			this.accelerationY = accelerationY;
+			this.accelerationZ = accelerationZ;
+			this.timestamp = timestamp;
 		}
 		
 	}
