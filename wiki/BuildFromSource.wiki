@@ -10,7 +10,7 @@ Key parameters:
   * minimum target is Flash Player 10.1
   * you may want to choose to include the manifest.xml file in the SWC 
 
-*Note:* Starting with version 0.8.2 you have to use [http://help.adobe.com/en_US/flex/using/WS2db454920e96a9e51e63e3d11c0bf69084-7abd.html conditional compilation] to create the target SWC file. Depending on whether you want to use the Flex-compatible version (with ArrayCollections and Data Binding support) or you prefer to use Cocoon P2P in pure AS3, you have to set additional compiler flags.
+*Note:* Starting with version 0.8.2 you have to use [http://help.adobe.com/en_US/flex/using/WS2db454920e96a9e51e63e3d11c0bf69084-7abd.html conditional compilation] to create the target SWC file. Depending on whether you want to use the Flex-compatible version (with !ArrayCollections and Data Binding support) or you prefer to use Cocoon P2P in pure AS3, you have to set additional compiler flags.
 
 For Flex-compatible build
 {{{
