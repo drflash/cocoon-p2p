@@ -13,7 +13,7 @@ Some key differences / important things:
   * in the Flex version the properties _clients_, _sharedObjects_ and _receivedObjects_ of the !LocalNetworkDiscovery class are *!ArrayCollections* 
   * the AS3 version can be used in Flex as well (of course), but it *does not support Data Binding*
 
-An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
+An example AS3 project (ZIP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
 
 <g:plusone size="medium"></g:plusone>
 
