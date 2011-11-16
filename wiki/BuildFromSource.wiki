@@ -1,4 +1,5 @@
 #summary Building Cocoon P2P from source
+#labels Featured
 
 = Building Cocoon P2P from source =
 
