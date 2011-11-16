@@ -7,6 +7,8 @@ Device discovery lets you get a list of all connected clients on a given NetGrou
 
 An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
 
+<g:plusone size="medium"></g:plusone>
+
 == Source code ==
 
 {{{
