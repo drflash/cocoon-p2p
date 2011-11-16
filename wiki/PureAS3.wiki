@@ -1,4 +1,5 @@
 #summary Using Cocoon P2P in non-Flex / pure-AS3 projects
+#labels Featured
 
 = Using Cocoon P2P in non-Flex / pure-AS3 projects =
 
