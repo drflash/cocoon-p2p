@@ -1,6 +1,8 @@
 #summary Video examples of various Cocoon P2P features
 #labels Featured
 
+<g:plusone size="medium"></g:plusone>
+
 == Device discovery == 
 
 <wiki:video url="http://www.youtube.com/watch?v=bXnHav_z2L0" width="600" height="400" />
