@@ -5,7 +5,7 @@
 
 As of version 0.82 Cocoon P2P can also be used in non-Flex projects (e.g. AS3 Projects in Flash Builder, Flash Projects in Flash CS 5, AS3 Projects in FDT, etc.). 
 
-To use the non-Flex (pure AS3) version make sure to download the correct SWC or [BuildFromSource set the correct compiler flags when compiling from source].
+To use the non-Flex (pure AS3) version make sure to [WhichOneIsTheCorrectVersion download the correct SWC] or set the correct compiler flags when [BuildFromSource compiling from source].
 
 Some key differences / important things:
 
