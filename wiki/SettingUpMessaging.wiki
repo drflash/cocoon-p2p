@@ -7,6 +7,8 @@ Cocoon P2P messaging lets you send messages to everyone in a NetGroup or a speci
 
 An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
 
+<g:plusone size="medium"></g:plusone>
+
 == Source code ==
 
 {{{
