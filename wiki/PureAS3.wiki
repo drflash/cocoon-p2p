@@ -14,6 +14,8 @@ Some key differences / important things:
 
 An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
 
+<g:plusone size="medium"></g:plusone>
+
 == Source code ==
 
 {{{
@@ -26,4 +28,3 @@ channel.addEventListener(ClientEvent.CLIENT_REMOVED, onClientRemoved);
 channel.addEventListener(MessageEvent.DATA_RECEIVED, onDataReceived);
 channel.connect();
 }}}
-<g:plusone size="medium"></g:plusone>
