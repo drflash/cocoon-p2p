@@ -5,13 +5,13 @@
 
 As of version 0.82 Cocoon P2P can also be used in non-Flex projects (e.g. AS3 Projects in Flash Builder, Flash Projects in Flash CS 5, AS3 Projects in FDT, etc.). 
 
-To use the non-Flex (pure AS3) version make sure to download the correct SWC or set the correct compiler flags when compiling from source.
+To use the non-Flex (pure AS3) version make sure to download the correct SWC or [BuildFromSource set the correct compiler flags when compiling from source].
 
 Some key differences / important things:
 
-  * in the AS3 version the properties _clients_, _sharedObjects_ and _receivedObjects_ of the LocalNetworkDiscovery class are *typed Vectors* 
-  * in the Flex version the properties _clients_, _sharedObjects_ and _receivedObjects_ of the LocalNetworkDiscovery class are *ArrayCollections* 
-  * the AS3 version can be used in Flex as well (of course), but it *does not support data binding*
+  * in the AS3 version the properties _clients_, _sharedObjects_ and _receivedObjects_ of the !LocalNetworkDiscovery class are *typed Vectors* 
+  * in the Flex version the properties _clients_, _sharedObjects_ and _receivedObjects_ of the !LocalNetworkDiscovery class are *!ArrayCollections* 
+  * the AS3 version can be used in Flex as well (of course), but it *does not support Data Binding*
 
 An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
 
