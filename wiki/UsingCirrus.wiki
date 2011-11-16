@@ -9,6 +9,8 @@ Cocoon P2P allows you to use Adobe's [http://labs.adobe.com/technologies/cirrus/
 
 To use it, just set the {{{useCirrus}}} property to true and specify your developer key with the {{{key}}} property.
 
+<g:plusone size="medium"></g:plusone>
+
 == Source code ==
 
 {{{
