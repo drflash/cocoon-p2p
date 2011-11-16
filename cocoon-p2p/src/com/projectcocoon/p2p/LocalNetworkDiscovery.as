@@ -44,17 +44,19 @@ package com.projectcocoon.p2p
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.NetStatusEvent;
+	import flash.events.TimerEvent;
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
 	import flash.sensors.Accelerometer;
+	import flash.utils.Timer;
 	
-	import mx.collections.ArrayCollection;
-	import mx.core.IMXMLObject;
-
+	CONFIG::FLEX
+	{
+		import mx.collections.ArrayCollection;
+	}
 	
 	[Event(name="groupConnected", type="com.projectcocoon.p2p.events.GroupEvent")]
 	[Event(name="groupClosed", type="com.projectcocoon.p2p.events.GroupEvent")]
-	[Event(name="clientAdded", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientAdded", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientUpdate", type="com.projectcocoon.p2p.events.ClientEvent")]
 	[Event(name="clientRemoved", type="com.projectcocoon.p2p.events.ClientEvent")]
@@ -63,7 +65,7 @@ package com.projectcocoon.p2p
 	[Event(name="objectAnnounced", type="com.projectcocoon.p2p.events.ObjectEvent")]
 	[Event(name="objectProgress", type="com.projectcocoon.p2p.events.ObjectEvent")]
 	[Event(name="objectComplete", type="com.projectcocoon.p2p.events.ObjectEvent")]
-	public class LocalNetworkDiscovery extends EventDispatcher implements IMXMLObject
+	public class LocalNetworkDiscovery extends EventDispatcher
 	{
 		/**
 		 * URL for LAN connectivity
@@ -78,28 +80,41 @@ package com.projectcocoon.p2p
 	
 		private var _clientName:String;
 		private var _groupName:String = "com.projectcocoon.p2p.default";
+		private var _multicastAddress:String = "225.225.0.1:30303";
+		private var _url:String = RTMFP_LOCAL;
+		private var _useCirrus:Boolean;
+		private var _key:String;
 		private var _autoConnect:Boolean = true;
 		private var _nc:NetConnection;
 		private var _group:NetGroup;
 		private var _groupManager:GroupManager;
 		private var _objectManager:ObjectManager;
 		private var _localClient:ClientVO;
-		private var _clients:ArrayCollection = new ArrayCollection();
-		private var _sharedObjects:ArrayCollection;
-		private var _receivedObjects:ArrayCollection;
-		private var _url:String = RTMFP_LOCAL;
-		private var _key:String;
-		private var _useCirrus:Boolean;
-		private var _multicastAddress:String = "225.225.0.1:30303";
 		private var _receiveLocal:Boolean;
 		private var _acc:Accelerometer;
 		private var _accelerometerInterval:uint = 0;
+		private var _timer:Timer;
+		
+		CONFIG::FLEX
+		{
+			private var _clients:ArrayCollection = new ArrayCollection();
+			private var _sharedObjects:ArrayCollection;
+			private var _receivedObjects:ArrayCollection;
+		}
+		CONFIG::AS3
+		{
+			private var _clients:Vector.<ClientVO> = new Vector.<ClientVO>();
+			private var _sharedObjects:Vector.<ObjectMetadataVO>;
+			private var _receivedObjects:Vector.<ObjectMetadataVO>;
+		}
+		
 		
 		// ========================== //
-			
+		
 		public function LocalNetworkDiscovery()
 		{
 			registerClasses();
+			initTimer();
 		}
 		
 		public function get connection():NetConnection
@@ -112,17 +127,12 @@ package com.projectcocoon.p2p
 			return _groupManager.getGroupSpec(_group);
 		}
 		
-		public function initialized(document:Object, id:String):void
-		{
-			if (autoConnect)
-				connect();
-		}
-		
 		/**
 		 * Connects to the p2p network 
 		 */		
 		public function connect():void
 		{
+			removeTimer();
 			close();
 			_nc = new NetConnection();
 			_nc.addEventListener(NetStatusEvent.NET_STATUS, onNetStatus);
@@ -198,8 +208,16 @@ package com.projectcocoon.p2p
 		public function requestObject(metadata:ObjectMetadataVO):void
 		{
 			var msg:MessageVO = getObjectManager().request(metadata);
-			if (msg)
-				receivedObjects.addItem(msg.data);
+			CONFIG::FLEX
+			{
+				if (msg)
+					receivedObjects.addItem(msg.data);
+			}
+			CONFIG::AS3
+			{
+				if (msg)
+					receivedObjects.push(msg.data);
+			}
 		}
 		
 		// ========================== //
@@ -215,7 +233,10 @@ package com.projectcocoon.p2p
 		/**
 		 * Number of connected clients
 		 */
-		[Bindable(event="clientsConnectedChange")]
+		CONFIG::FLEX
+		{
+			[Bindable(event="clientsConnectedChange")]
+		}
 		public function get clientsConnected():uint
 		{
 			if (_groupManager && _group)
@@ -223,41 +244,83 @@ package com.projectcocoon.p2p
 			return 0;
 		}
 		
-		/**
-		 * ArrayCollection filled with ClientVO objects representing all clients
-		 */
-		[Bindable(event="clientsChange")]
-		public function get clients():ArrayCollection
+		CONFIG::FLEX
 		{
-			return _clients;
-		}
-		
-		/**
-		 * ArrayCollection filled with ObjectMetadataVO objects representing all objects shared by the local client
-		 */		
-		[Bindable(event="sharedObjectsChange")]
-		public function get sharedObjects():ArrayCollection
-		{
-			if (!_sharedObjects)
+				
+			/**
+			 * ArrayCollection filled with ClientVO objects representing all clients
+			 */
+			[Bindable(event="clientsChange")]
+			public function get clients():ArrayCollection
 			{
-				_sharedObjects = new ArrayCollection();
-				dispatchEvent(new Event("sharedObjectsChange"));
+				return _clients;
 			}
-			return _sharedObjects;
-		}
-		
-		/**
-		 * ArrayCollection filled with ObjectMetadataVO objects representing all objects received by this client
-		 */		
-		[Bindable(event="receivedObjectsChange")]
-		public function get receivedObjects():ArrayCollection
-		{
-			if (!_receivedObjects)
+				
+			/**
+			 * ArrayCollection filled with ObjectMetadataVO objects representing all objects shared by the local client
+			 */		
+			[Bindable(event="sharedObjectsChange")]
+			public function get sharedObjects():ArrayCollection
 			{
-				_receivedObjects = new ArrayCollection();
-				dispatchEvent(new Event("receivedObjectsChange"));
+				if (!_sharedObjects)
+				{
+					_sharedObjects = new ArrayCollection();
+					dispatchEvent(new Event("sharedObjectsChange"));
+				}
+				return _sharedObjects;
 			}
-			return _receivedObjects;
+			
+			/**
+			 * ArrayCollection filled with ObjectMetadataVO objects representing all objects received by this client
+			 */		
+			[Bindable(event="receivedObjectsChange")]
+			public function get receivedObjects():ArrayCollection
+			{
+				if (!_receivedObjects)
+				{
+					_receivedObjects = new ArrayCollection();
+					dispatchEvent(new Event("receivedObjectsChange"));
+				}
+				return _receivedObjects;
+			}
+			
+		}
+	
+		CONFIG::AS3
+		{
+			/**
+			 * Vector filled with ClientVO objects representing all clients
+			 */
+			public function get clients():Vector.<ClientVO>
+			{
+				return _clients;
+			}
+			
+			/**
+			 * Vector filled with ObjectMetadataVO objects representing all objects shared by the local client
+			 */		
+			public function get sharedObjects():Vector.<ObjectMetadataVO>
+			{
+				if (!_sharedObjects)
+				{
+					_sharedObjects = new Vector.<ObjectMetadataVO>();
+					dispatchEvent(new Event("sharedObjectsChange"));
+				}
+				return _sharedObjects;
+			}
+			
+			/**
+			 * Vector filled with ObjectMetadataVO objects representing all objects received by this client
+			 */		
+			public function get receivedObjects():Vector.<ObjectMetadataVO>
+			{
+				if (!_receivedObjects)
+				{
+					_receivedObjects = new Vector.<ObjectMetadataVO>();
+					dispatchEvent(new Event("receivedObjectsChange"));
+				}
+				return _receivedObjects;
+			}
 		}
 		
 		/**
@@ -405,6 +468,30 @@ package com.projectcocoon.p2p
 			ClassRegistry.registerClasses();
 		}
 		
+		private function initTimer():void
+		{
+			_timer = new Timer(500, 1);
+			_timer.addEventListener(TimerEvent.TIMER, timerComplete);
+		}
+		
+		private function removeTimer():void
+		{
+			if (_timer)
+			{
+				_timer.removeEventListener(TimerEvent.TIMER, timerComplete);	
+				_timer.stop();
+				_timer = null;
+			}
+		}
+		
+		private function timerComplete(event:TimerEvent):void
+		{
+			removeTimer();
+			if (autoConnect)
+				connect();
+		}
+		
+		
 		private function cleanup():void
 		{
 			// do some cleanup
@@ -447,10 +534,19 @@ package com.projectcocoon.p2p
 			if (_localClient)
 				_localClient = null;
 			
-			if (_clients)
-				_clients.removeAll();
-			else
-				_clients = new ArrayCollection();
+			CONFIG::FLEX
+			{
+				if (_clients)
+					_clients.removeAll();
+				else
+					_clients = new ArrayCollection();				
+			}
+			
+			CONFIG::AS3
+			{
+				_clients = new Vector.<ClientVO>();				
+			}
+			
 			dispatchEvent(new Event("clientsChange"));		
 		}
 		
@@ -471,13 +567,6 @@ package com.projectcocoon.p2p
 			// create the group
 			_group = _groupManager.createNetGroup(groupName);
 			
-		}
-
-		private function setupClient():void
-		{		
-			// get the local ClientVO for reference
-			_localClient = _groupManager.getLocalClient(_group);
-			_localClient.clientName = getClientName();
 		}
 		
 		private function getObjectManager():ObjectManager
@@ -507,7 +596,14 @@ package com.projectcocoon.p2p
 		private function share(value:Object, groupID:String, metadata:Object):void
 		{
 			var msg:MessageVO = getObjectManager().share(value, groupID, metadata);
-			sharedObjects.addItem(msg.data); // add the ObjectMetadataVO to the list of shared Objects
+			CONFIG::FLEX
+			{
+				sharedObjects.addItem(msg.data); // add the ObjectMetadataVO to the list of shared Objects
+			}
+			CONFIG::AS3
+			{
+				sharedObjects.push(msg.data); // add the ObjectMetadataVO to the list of shared Objects
+			}
 		}
 		
 		// ============= Event Handlers ============= //
@@ -519,6 +615,7 @@ package com.projectcocoon.p2p
 				case NetStatusCode.NETCONNECTION_CONNECT_SUCCESS:
 					setupGroup();
 					break;
+				// TODO: add NetConnection disconnect handling and maybe reconnecting...
 			}
 		}
 		
@@ -567,8 +664,17 @@ package com.projectcocoon.p2p
 		{
 			if (event.group == _group)
 			{
-				_clients.addItem(event.client);
+				CONFIG::FLEX
+				{
+					_clients.addItem(event.client);
+				}
+				CONFIG::AS3
+				{
+					_clients.push(event.client);	
+				}
 				dispatchEvent(new Event("clientsConnectedChange"));
+				if (event.client.isLocal)
+					event.client.clientName = getClientName();
 				announceName();
 			}
 			// distribute the event
@@ -579,7 +685,14 @@ package com.projectcocoon.p2p
 		{
 			if (event.group == _group)
 			{
-				_clients.removeItemAt(_clients.getItemIndex(event.client));
+				CONFIG::FLEX
+				{
+					_clients.removeItemAt(_clients.getItemIndex(event.client));
+				}
+				CONFIG::AS3
+				{
+					_clients.splice(_clients.indexOf(event.client), 1);
+				}
 				dispatchEvent(new Event("clientsConnectedChange"));
 			}
 			// distribute the event
