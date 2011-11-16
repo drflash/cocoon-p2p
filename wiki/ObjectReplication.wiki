@@ -11,6 +11,8 @@ In theory objects of any size can get replicated but for larger objects (i.e. fi
 
 An example Flex project (FXP file) is available in the [http://code.google.com/p/cocoon-p2p/downloads/list downloads section]
 
+<g:plusone size="medium"></g:plusone>
+
 == Source code ==
 
 {{{
