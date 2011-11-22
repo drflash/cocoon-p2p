@@ -1,5 +1,8 @@
 package com.projectcocoon.p2p.command
 {
+	/**
+	 * Helper class containing the Command types
+	 */
 	public class CommandType
 	{
 

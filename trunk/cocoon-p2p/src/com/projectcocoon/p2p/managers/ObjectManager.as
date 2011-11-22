@@ -103,6 +103,12 @@ package com.projectcocoon.p2p.managers
 			return msg;
 		}
 		
+		/**
+		 * Requests a shared object. Once requested, the object will be replicated.
+		 * During replication, <code>ObjectEvent.OBJECT_PROGRESS</code> events get dispatched.
+		 * When the object replication is finished, an <code>ObjectEvent.OBJECT_COMPLETE</code> event gets dispatched
+		 * @param metadata the metadata of the requested object
+		 */		
 		public function request(metadata:ObjectMetadataVO):MessageVO
 		{
 			// already requested?

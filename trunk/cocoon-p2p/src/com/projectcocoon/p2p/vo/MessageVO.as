@@ -1,7 +1,13 @@
 package com.projectcocoon.p2p.vo
 {
 	
-	[Bindable]
+	CONFIG::FLEX
+	{
+		[Bindable]
+	}
+	/**
+	 * Stores message information 
+	 */
 	public class MessageVO
 	{
 
@@ -15,6 +21,15 @@ package com.projectcocoon.p2p.vo
 		public var sequenceId:uint;
 		public var timestamp:Date;
 		
+		/**
+		 * Stores messages. To maintain type-safety when sending custom data types across the network make sure to use <code>registerClassAlias()</code> on your custom types. 
+		 * @param client the client who sent this message
+		 * @param data the user data of this message
+		 * @param destination the group address to send this message to 
+		 * @param type used internally
+		 * @param command used internally
+		 * 
+		 */		
 		public function MessageVO(client:ClientVO=null, data:Object=null, destination:String="", type:String="", command:String="")
 		{
 			this.client = client;
@@ -26,6 +41,11 @@ package com.projectcocoon.p2p.vo
 			sequenceId = ++SEQ;
 		}
 		
+		/**
+		 * Is this a direct message?
+		 * @return true if this is a direct (private) message
+		 * 
+		 */		
 		public function get isDirectMessage():Boolean
 		{
 			return (destination && destination != "") 

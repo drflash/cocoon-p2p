@@ -1,7 +1,13 @@
 package com.projectcocoon.p2p.vo
 {
 	
-	[Bindable]
+	CONFIG::FLEX
+	{
+		[Bindable]
+	}
+	/**
+	 * Stores acceleration information 
+	 */
 	public class AccelerationVO
 	{
 		

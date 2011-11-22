@@ -6,12 +6,19 @@ package com.projectcocoon.p2p.events
 	import flash.events.Event;
 	import flash.net.NetGroup;
 	
+	/**
+	 * Used to signal message events 
+	 */	
 	public class MessageEvent extends Event
 	{
 		
 		public static const DATA_RECEIVED:String = "dataReceived";
 		
-		[Bindable] public var message:MessageVO;
+		CONFIG::FLEX
+		{
+			[Bindable]
+		}
+		public var message:MessageVO;
 		public var group:NetGroup;
 		
 		public function MessageEvent(type:String, message:MessageVO=null, group:NetGroup = null)
