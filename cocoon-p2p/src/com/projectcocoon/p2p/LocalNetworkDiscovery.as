@@ -472,6 +472,7 @@ package com.projectcocoon.p2p
 		{
 			_timer = new Timer(500, 1);
 			_timer.addEventListener(TimerEvent.TIMER, timerComplete);
+			_timer.start();
 		}
 		
 		private function removeTimer():void
