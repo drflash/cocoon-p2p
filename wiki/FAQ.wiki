@@ -3,7 +3,7 @@
 
 = Frequently Asked Questions =
 <br/>
-== Message delivery seems sloooow. I though P2P should be fast? ==
+== Message delivery seems sloooow. I thought P2P should be fast? ==
 
 The underlying architecture of Cocoon P2P (i.e. the RTMFP protocol which is actually using IP Multicast and the UDP network protocol) is actually pretty fast. 
 
