@@ -5,6 +5,9 @@ package com.projectcocoon.p2p.events
 	import flash.events.Event;
 	import flash.net.NetGroup;
 	
+	/**
+	 * Used to signal group events 
+	 */	
 	public class GroupEvent extends Event
 	{
 		

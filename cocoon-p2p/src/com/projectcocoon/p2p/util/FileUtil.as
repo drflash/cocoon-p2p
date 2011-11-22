@@ -8,6 +8,9 @@ package com.projectcocoon.p2p.util
 
 	[Event(name="loadComplete", type="flash.events.Event")]
 	[Event(name="saveComplete", type="flash.events.Event")]
+	/**
+	 * Helper class to easily select local files for file sharing and to store received files.
+	 */
 	public class FileUtil extends EventDispatcher
 	{
 		private var fileRefLoad:FileReference;
@@ -17,6 +20,11 @@ package com.projectcocoon.p2p.util
 		{
 		}
 		
+		/**
+		 * The selected file's data 
+		 * @return the selected file's data 
+		 * 
+		 */		
 		public function get data():ByteArray
 		{
 			if (fileRefLoad)
@@ -24,6 +32,11 @@ package com.projectcocoon.p2p.util
 			return null;
 		}
 		
+		/**
+		 * The selected file's name 
+		 * @return the selected file's name 
+		 * 
+		 */		
 		public function get name():String
 		{
 			if (fileRefLoad)
@@ -31,12 +44,21 @@ package com.projectcocoon.p2p.util
 			return null;
 		}
 		
+		/**
+		 * Opens up a "File open" dialog 
+		 */		
 		public function load():void
 		{
 			fileRefLoad = getFileRefLoad();
 			fileRefLoad.browse();
 		}
 		
+		/**
+		 * Opens up a "File save" dialog and stores a file 
+		 * @param bytes data to be saved
+		 * @param name optional file name
+		 * 
+		 */		
 		public function save(bytes:ByteArray, name:String = null):void
 		{
 			fileRefLoad = getFileRefLoad();

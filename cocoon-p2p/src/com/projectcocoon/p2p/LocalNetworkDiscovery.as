@@ -55,16 +55,93 @@ package com.projectcocoon.p2p
 		import mx.collections.ArrayCollection;
 	}
 	
+	/**
+	 *  Dispatched when the local client successfully joined the central <code>NetGroup</code>
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.GroupEvent.GROUP_CONNECTED
+	 *  
+	 */
 	[Event(name="groupConnected", type="com.projectcocoon.p2p.events.GroupEvent")]
+	
+	/**
+	 *  Dispatched when the central <code>NetGroup</code> has been closed (i.e. local client is no longer connected to the <code>NetGroup</code>)
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.GroupEvent.GROUP_CLOSED
+	 *  
+	 */
 	[Event(name="groupClosed", type="com.projectcocoon.p2p.events.GroupEvent")]
+	
+	/**
+	 *  Dispatched when a new client has joined the <code>NetGroup</code>. Use the <code>client</code> property to access the <code>ClientVO</code> object.
+	 * <b>Note:</b> when a new client joins, his <code>clientName</code> will be <code>null</code>. Use the <code>clientUpdate</code> event
+	 * to get notified when his real <code>clientName</code> has been received.
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.ClientEvent.CLIENT_ADDED
+	 *  
+	 */
 	[Event(name="clientAdded", type="com.projectcocoon.p2p.events.ClientEvent")]
+	
+	/**
+	 *  Dispatched when a client updates (e.g. <code>clientName</code> has changed). Use the <code>client</code> property to access the <code>ClientVO</code> object.
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.ClientEvent.CLIENT_UPDATE
+	 *  
+	 */
 	[Event(name="clientUpdate", type="com.projectcocoon.p2p.events.ClientEvent")]
+	
+	/**
+	 *  Dispatched after a client has left the <code>NetGroup</code>. Use the <code>client</code> property to access the <code>ClientVO</code> object.
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.ClientEvent.CLIENT_REMOVED
+	 *  
+	 */
 	[Event(name="clientRemoved", type="com.projectcocoon.p2p.events.ClientEvent")]
+	
+	
+	/**
+	 *  Dispatched after arbitrary data sent by another client has been received by this client. Use the <code>message</code> property to access the <code>MessageVO</code> object that holds the data.
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.MessageEvent.DATA_RECEIVED
+	 *  
+	 */
 	[Event(name="dataReceived", type="com.projectcocoon.p2p.events.MessageEvent")]
+	
+	/**
+	 *  Dispatched after acceleration data sent by another client has been received by this client. Use the <code>acceleration</code> property to access the <code>AccelerationVO</code> object that holds the data.
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.AccelerationEvent.ACCELEROMETER
+	 *  
+	 */
 	[Event(name="accelerometerUpdate", type="com.projectcocoon.p2p.events.AccelerationEvent")]
+	
+	/**
+	 *  Dispatched after an object replication announcement has been received by this client. Use the <code>metadata</code> property to access the <code>ObjectMetadataVO</code> object that holds the data.
+	 * 	To request an object (i.e. start replicating the object on this client) call <code>requestObject(event.metadata)</code> 
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.ObjectEvent.OBJECT_ANNOUNCED
+	 *  
+	 */
 	[Event(name="objectAnnounced", type="com.projectcocoon.p2p.events.ObjectEvent")]
+	
+	/**
+	 *  Dispatched after an object replication started and while replication takes place. Use the <code>metadata</code> property to access the <code>ObjectMetadataVO</code> object that holds the data.
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.ObjectEvent.OBJECT_PROGRESS
+	 *  
+	 */
 	[Event(name="objectProgress", type="com.projectcocoon.p2p.events.ObjectEvent")]
+	
+	/**
+	 *  Dispatched after an object has been completely received by this client and the data is valid (local hash matches remote hash). Use the <code>metadata</code> property to access the <code>ObjectMetadataVO</code> object that holds the data. 
+	 *
+	 *  @eventType com.projectcocoon.p2p.events.ObjectEvent.OBJECT_COMPLETE
+	 *  
+	 */
 	[Event(name="objectComplete", type="com.projectcocoon.p2p.events.ObjectEvent")]
+	
+	/**
+	 * The LocalNetworkDiscovery is the base class in Cocoon P2P.
+	 */
 	public class LocalNetworkDiscovery extends EventDispatcher
 	{
 		/**
@@ -111,20 +188,13 @@ package com.projectcocoon.p2p
 		
 		// ========================== //
 		
+		/**
+		 * Creates a new instance. If the <code>autoConnect</code> property is set to <code>true</code> it will automatically create a connection after creation.
+		 */
 		public function LocalNetworkDiscovery()
 		{
 			registerClasses();
 			initTimer();
-		}
-		
-		public function get connection():NetConnection
-		{
-			return _nc;
-		}
-		
-		public function get spec():String
-		{
-			return _groupManager.getGroupSpec(_group);
 		}
 		
 		/**
@@ -148,6 +218,9 @@ package com.projectcocoon.p2p
 			}
 		}
 		
+		/**
+		 * Closes the connection and cleans up everything.
+		 */ 
 		public function close():void
 		{
 			cleanup();
@@ -156,7 +229,7 @@ package com.projectcocoon.p2p
 		/**
 		 * Sends an arbitrary message (object, primitive, etc.) to a specific peer in the p2p network 
 		 * @param value the message to send. Can be any type.
-		 * @param groupID the group address of the peer (usually ClientVO.groupID)
+		 * @param groupID the group address of the peer (usually <code>ClientVO.groupID</code>)
 		 */		
 		public function sendMessageToClient(value:Object, groupID:String):void
 		{
@@ -178,8 +251,8 @@ package com.projectcocoon.p2p
 		
 		/**
 		 * Shares an arbitrary object (any type: object, primitive, etc.) with a specific peer in the p2p network.
-		 * The peer will receive an ObjectEvent.OBJECT_ANNOUNCED event. To request the annonced object,
-		 * the peer has to call requestObject()
+		 * The peer will receive an <code>ObjectEvent.OBJECT_ANNOUNCED</code> event. To request the annonced object,
+		 * the peer has to call <code>requestObject(event.metadata)</code>
 		 * @param value the object to share. Can be any type.
 		 */
 		public function shareWithClient(value:Object, groupID:String, metadata:Object = null):void
@@ -189,8 +262,8 @@ package com.projectcocoon.p2p
 		
 		/**
 		 * Shares an arbitrary object (any type: object, primitive, etc.) with all peers in the p2p network.
-		 * The peer will receive an ObjectEvent.OBJECT_ANNOUNCED event. To request the annonced object,
-		 * the peer has to call requestObject()
+		 * The peer will receive an <code>ObjectEvent.OBJECT_ANNOUNCED</code> event. To request the annonced object,
+		 * the peer has to call <code>requestObject(event.metadata)</code>
 		 * @param value the object to share. Can be any type.
 		 */
 		public function shareWithAll(value:Object, metadata:Object = null):void
@@ -200,11 +273,10 @@ package com.projectcocoon.p2p
 		
 		/**
 		 * Requests a shared object. Once requested, the object will be replicated.
-		 * During replication, ObjectEvent.OBJECT_PROGRESS events get dispatched.
-		 * When the object replication is finished, an ObjectEvent.OBJECT_COMPLETE event gets dispatched
+		 * During replication, <code>ObjectEvent.OBJECT_PROGRESS</code> events get dispatched.
+		 * When the object replication is finished, an <code>ObjectEvent.OBJECT_COMPLETE</code> event gets dispatched
 		 * @param metadata the metadata of the requested object
-		 * 
-		 */		
+		 */	
 		public function requestObject(metadata:ObjectMetadataVO):void
 		{
 			var msg:MessageVO = getObjectManager().request(metadata);
@@ -223,7 +295,23 @@ package com.projectcocoon.p2p
 		// ========================== //
 		
 		/**
-		 * The local ClientVO object
+		 * The <code>NetConnection</code> used
+		 */
+		public function get connection():NetConnection
+		{
+			return _nc;
+		}
+		
+		/**
+		 * The string representation of the group specifier
+		 */
+		public function get spec():String
+		{
+			return _groupManager.getGroupSpec(_group);
+		}
+		
+		/**
+		 * The local <code>ClientVO</code> object
 		 */
 		public function get localClient():ClientVO
 		{
@@ -248,7 +336,7 @@ package com.projectcocoon.p2p
 		{
 				
 			/**
-			 * ArrayCollection filled with ClientVO objects representing all clients
+			 * <code>ArrayCollection</code> filled with <code>ClientVO</code> objects representing all clients
 			 */
 			[Bindable(event="clientsChange")]
 			public function get clients():ArrayCollection
@@ -257,7 +345,7 @@ package com.projectcocoon.p2p
 			}
 				
 			/**
-			 * ArrayCollection filled with ObjectMetadataVO objects representing all objects shared by the local client
+			 * <code>ArrayCollection</code> filled with <code>ObjectMetadataVO</code> objects representing all objects shared by the local client
 			 */		
 			[Bindable(event="sharedObjectsChange")]
 			public function get sharedObjects():ArrayCollection
@@ -271,7 +359,7 @@ package com.projectcocoon.p2p
 			}
 			
 			/**
-			 * ArrayCollection filled with ObjectMetadataVO objects representing all objects received by this client
+			 * <code>ArrayCollection</code> filled with <code>ObjectMetadataVO</code> objects representing all objects received by this client
 			 */		
 			[Bindable(event="receivedObjectsChange")]
 			public function get receivedObjects():ArrayCollection
@@ -289,7 +377,7 @@ package com.projectcocoon.p2p
 		CONFIG::AS3
 		{
 			/**
-			 * Vector filled with ClientVO objects representing all clients
+			 * <code>Vector</code> filled with <code>ClientVO</code> objects representing all clients
 			 */
 			public function get clients():Vector.<ClientVO>
 			{
@@ -297,7 +385,7 @@ package com.projectcocoon.p2p
 			}
 			
 			/**
-			 * Vector filled with ObjectMetadataVO objects representing all objects shared by the local client
+			 * <code>Vector</code> filled with <code>ObjectMetadataVO</code> objects representing all objects shared by the local client
 			 */		
 			public function get sharedObjects():Vector.<ObjectMetadataVO>
 			{
@@ -310,7 +398,7 @@ package com.projectcocoon.p2p
 			}
 			
 			/**
-			 * Vector filled with ObjectMetadataVO objects representing all objects received by this client
+			 * <code>Vector</code> filled with <code>ObjectMetadataVO</code> objects representing all objects received by this client
 			 */		
 			public function get receivedObjects():Vector.<ObjectMetadataVO>
 			{
@@ -325,7 +413,6 @@ package com.projectcocoon.p2p
 		
 		/**
 		 * When true, the connection will get created automatically after initialization<p/>
-		 * Defaults to true
 		 * @default true
 		 */
 		public function get autoConnect():Boolean
@@ -356,9 +443,8 @@ package com.projectcocoon.p2p
 		
 		/**
 		 * Specifies the name of the NetGroup where other peers will join in. <p/>
-		 * <b>Note:</b> to avoid clashed with other applications, this should be something "unique",
+		 * <b>Note:</b> to avoid clashes with other applications, this should be something "unique",
 		 * e.g. you should prefix the name with a reverse DNS name or something like that<p/>
-		 * Defaults to com.projectcocoon.p2p.default
 		 * @default com.projectcocoon.p2p.default
 		 */
 		public function get groupName():String
@@ -372,7 +458,6 @@ package com.projectcocoon.p2p
 		
 		/**
 		 * Specifies the local multicast address that will be used by all clients.<p/>
-		 * Defaults to 225.225.0.1:30303
 		 * @default 225.225.0.1:30303
 		 */ 
 		public function get multicastAddress():String
@@ -387,7 +472,6 @@ package com.projectcocoon.p2p
 		/**
 		 * When set to true, the local client will receive messages sent to other peers as well
 		 * (helpful when building chat applications)<p/>
-		 * Defaults to false
 		 * @default false
 		 */ 
 		public function get loopback():Boolean
@@ -428,7 +512,6 @@ package com.projectcocoon.p2p
 		/**
 		 * When set to true, the connection will be made against the Cirrus peer introduction service
 		 * which allows to connect to peers on different networks instead of using local peer discovery<p/>
-		 * Defaults to false
 		 * @default false
 		 */
 		public function get useCirrus():Boolean
@@ -443,7 +526,7 @@ package com.projectcocoon.p2p
 		}
 
 		/**
-		 * Sets the desired time interval (in milliseconds) to use for reading updates from the Accelerometer
+		 * Sets the desired time interval (in milliseconds) to use for reading updates from the <code>Accelerometer</code>
 		 */
 		public function get accelerometerInterval():uint
 		{

@@ -4,6 +4,9 @@ package com.projectcocoon.p2p.events
 	
 	import flash.events.Event;
 	
+	/**
+	 * Used to signal object events 
+	 */	
 	public class ObjectEvent extends Event
 	{
 		

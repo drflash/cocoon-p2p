@@ -1,5 +1,8 @@
 package com.projectcocoon.p2p
 {
+	/**
+	 * Helper class containing the NetConnection codes 
+	 */	
 	public class NetStatusCode
 	{
 

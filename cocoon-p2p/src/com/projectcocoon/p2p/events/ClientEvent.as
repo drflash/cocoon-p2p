@@ -5,6 +5,9 @@ package com.projectcocoon.p2p.events
 	import flash.events.Event;
 	import flash.net.NetGroup;
 	
+	/**
+	 * Used to signal client events 
+	 */	
 	public class ClientEvent extends Event
 	{
 		
@@ -12,7 +15,11 @@ package com.projectcocoon.p2p.events
 		public static const CLIENT_UPDATE:String = "clientUpdate";
 		public static const CLIENT_REMOVED:String = "clientRemoved";
 		
-		[Bindable] public var client:ClientVO;
+		CONFIG::FLEX
+		{
+			[Bindable]
+		}
+		public var client:ClientVO;
 		public var group:NetGroup;
 		
 		public function ClientEvent(type:String, client:ClientVO=null, group:NetGroup=null)
