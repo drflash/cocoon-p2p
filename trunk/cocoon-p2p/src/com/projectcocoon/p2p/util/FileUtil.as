@@ -61,8 +61,8 @@ package com.projectcocoon.p2p.util
 		 */		
 		public function save(bytes:ByteArray, name:String = null):void
 		{
-			fileRefLoad = getFileRefLoad();
-			fileRefLoad.save(bytes, name);
+			fileRefSave = getFileRefSave();
+			fileRefSave.save(bytes, name);
 		}
 		
 		private function getFileRefLoad():FileReference
