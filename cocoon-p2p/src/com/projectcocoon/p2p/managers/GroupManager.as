@@ -46,10 +46,11 @@ package com.projectcocoon.p2p.managers
 			var groupSpec:GroupSpecifier = new GroupSpecifier(name);
 			groupSpec.postingEnabled = true;
 			groupSpec.routingEnabled = true;
-			groupSpec.ipMulticastMemberUpdatesEnabled = true;
-			groupSpec.objectReplicationEnabled = true;
-			groupSpec.addIPMulticastAddress(multicastAddress);
 			groupSpec.serverChannelEnabled = true;
+			groupSpec.objectReplicationEnabled = true;
+			groupSpec.multicastEnabled = true;
+			groupSpec.ipMulticastMemberUpdatesEnabled = true;
+			groupSpec.addIPMulticastAddress(multicastAddress);
 			
 			var groupSpecString:String = groupSpec.groupspecWithAuthorizations();
 			var group:NetGroup = new NetGroup(netConnection, groupSpecString);
