@@ -8,6 +8,8 @@ package com.projectcocoon.p2p.util
 
 	[Event(name="loadComplete", type="flash.events.Event")]
 	[Event(name="saveComplete", type="flash.events.Event")]
+	[Event(name="cancel", type="flash.events.Event")]
+	[Event(name="ioError", type="flash.events.IOErrorEvent")]
 	/**
 	 * Helper class to easily select local files for file sharing and to store received files.
 	 */
@@ -103,10 +105,12 @@ package com.projectcocoon.p2p.util
 		
 		protected function onCancel(event:Event):void
 		{
+			dispatchEvent(event.clone());
 		}
 		
 		private function onIoError(event:IOErrorEvent):void
 		{
+			dispatchEvent(event.clone());
 		}
 
 		private function onComplete(event:Event):void

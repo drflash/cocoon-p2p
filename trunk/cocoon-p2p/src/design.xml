@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<design version="2">
+
+    <namespaces>
+        <namespace prefix="p2p" uri="http://com.projectcocoon.p2p" />
+    </namespaces>
+ 
+    <categories>
+        <category id="P2P" label="Cocoon P2P" defaultExpand="true" />
+    </categories>
+    
+    <components>
+        <component name="LocalNetworkDiscovery" displayName="LocalNetworkDiscovery" namespace="p2p" category="P2P" />
+    </components>
+    
+</design>
